@@ -55,8 +55,8 @@
                                 <div class="card h-100 candidate-card">
                                     {% if candidate.image_path %}
                                     <div class="candidate-image-container">
-                                        <img src="{{ url_for('static', filename=candidate.image_path) }}"
-                                             class="card-img-top candidate-image"
+                                        <img src="{{ url_for('main.serve_candidate_image', filename=candidate.image_path) }}"
+                                             class="img-fluid rounded"
                                              alt="{{ candidate.name }}"
                                              data-bs-toggle="modal"
                                              data-bs-target="#imageModal{{ candidate.id }}">
@@ -139,7 +139,7 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body text-center p-0">
-                        <img src="{{ url_for('static', filename=candidate.image_path) }}"
+                        <img src="{{ url_for('main.serve_candidate_image', filename=candidate.image_path) }}"
                              class="img-fluid"
                              alt="{{ candidate.name }}"
                              style="max-height: 80vh; width: auto;">

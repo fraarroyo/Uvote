@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Vote - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h2 class="card-title text-center mb-4">{{ election.title }}</h2>
+                    
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('vote', election_id=election.id) }}">
+                        {{ form.csrf_token }}
+                        
+                        {% if election.election_type == 'single_choice' %}
+                            <div class="mb-4">
+                                <p class="text-muted mb-3">Select one candidate:</p>
+                                {% for candidate in candidates %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="radio" name="vote" 
+                                               id="candidate{{ candidate.id }}" value="{{ candidate.id }}" required>
+                                        <label class="form-check-label" for="candidate{{ candidate.id }}">
+                                            {{ candidate.name }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% elif election.election_type == 'multiple_choice' %}
+                            <div class="mb-4">
+                                <p class="text-muted mb-3">Select up to {{ election.max_choices }} candidates:</p>
+                                {% for candidate in candidates %}
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="votes[]" 
+                                               id="candidate{{ candidate.id }}" value="{{ candidate.id }}">
+                                        <label class="form-check-label" for="candidate{{ candidate.id }}">
+                                            {{ candidate.name }}
+                                        </label>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-vote-yea me-2"></i>Submit Vote
+                            </button>
+                            <a href="{{ url_for('elections') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Elections
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add custom script for multiple choice validation -->
+{% if election.election_type == 'multiple_choice' %}
+<script>
+document.querySelector('form').addEventListener('submit', function(e) {
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]:checked');
+    const maxChoices = {{ election.max_choices }};
+    
+    if (checkboxes.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one candidate.');
+    } else if (checkboxes.length > maxChoices) {
+        e.preventDefault();
+        alert(`You can only select up to ${maxChoices} candidates.`);
+    }
+});
+</script>
+{% endif %}
+{% endblock %} 

@@ -45,7 +45,7 @@
                                             {% else %}
                                             <div class="d-flex align-items-center">
                                                 {% if vote.candidate.image_path %}
-                                                <img src="{{ url_for('static', filename=vote.candidate.image_path) }}" 
+                                                <img src="{{ url_for('main.serve_candidate_image', filename=vote.candidate.image_path) }}" 
                                                      alt="{{ vote.candidate.name }}" 
                                                      class="rounded-circle me-2" 
                                                      style="width: 40px; height: 40px; object-fit: cover;">
@@ -60,7 +60,7 @@
                                                     {% if vote.candidate.party_list %}
                                                     <div class="d-flex align-items-center">
                                                         {% if vote.candidate.party_list.image_path %}
-                                                        <img src="{{ url_for('static', filename='party_images/' + vote.candidate.party_list.image_path) }}"
+                                                        <img src="{{ url_for('main.serve_party_image', filename=vote.candidate.party_list.image_path) }}"
                                                              alt="{{ vote.candidate.party_list.name }}"
                                                              class="rounded me-2"
                                                              style="width: 20px; height: 20px; object-fit: cover;">
@@ -96,4 +96,34 @@
         </div>
     </div>
 </div>
+
+<style>
+.card {
+    border: none;
+    margin-bottom: 1.5rem;
+}
+
+.card-header {
+    border-bottom: none;
+    padding: 1rem 1.5rem;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.candidate-image {
+    transition: transform 0.2s;
+}
+
+.candidate-image:hover {
+    transform: scale(1.1);
+}
+</style>
 {% endblock %} 

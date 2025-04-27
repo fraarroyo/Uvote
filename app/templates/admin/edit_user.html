@@ -92,7 +92,7 @@
                                 <i class="fas fa-save me-2"></i>Save Changes
                             </button>
                             {% if not user.is_default_admin %}
-                            <button type="button" class="btn btn-danger" onclick="confirmDelete({{ user.id }})">
+                            <button type="button" class="btn btn-danger" id="deleteUserBtn" data-user-id="{{ user.id }}">
                                 <i class="fas fa-trash me-2"></i>Delete User
                             </button>
                             {% endif %}
@@ -134,6 +134,15 @@
 <script>
 let userIdToDelete = null;
 
+document.addEventListener('DOMContentLoaded', function() {
+    const deleteBtn = document.getElementById('deleteUserBtn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            confirmDelete(this.dataset.userId);
+        });
+    }
+});
+
 function confirmDelete(userId) {
     userIdToDelete = userId;
     const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
@@ -159,7 +168,7 @@ function deleteUser() {
     })
     .then(data => {
         if (data.success) {
-            window.location.href = "{{ url_for('main.manage_users') }}";
+            delayedRedirect("{{ url_for('main.manage_users') }}");
         } else {
             showAlert('danger', data.message || 'Error deleting user');
         }
@@ -189,9 +198,25 @@ function showAlert(type, message) {
     `;
     document.body.appendChild(alertDiv);
     
-    setTimeout(() => {
-        alertDiv.remove();
-    }, 3000);
+    // Use requestAnimationFrame for timing
+    let start = null;
+    function removeAlert(timestamp) {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        
+        if (elapsed < 3000) {
+            requestAnimationFrame(removeAlert);
+        } else {
+            alertDiv.remove();
+        }
+    }
+    requestAnimationFrame(removeAlert);
+}
+
+function delayedRedirect(url) {
+    requestAnimationFrame(() => {
+        window.location.href = url;
+    });
 }
 </script>
 {% endblock %} 

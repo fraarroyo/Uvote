@@ -66,6 +66,7 @@ z{% extends "base.html" %}
                                 <th>Position</th>
                                 <th>Election</th>
                                 <th>Party List</th>
+                                <th>Image</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -87,6 +88,12 @@ z{% extends "base.html" %}
                                                 </option>
                                             {% endfor %}
                                         </select>
+                                    </td>
+                                    <td>
+                                        {% if candidate.image_path %}
+                                            <img src="{{ url_for('main.serve_candidate_image', filename=candidate.image_path) }}" 
+                                                 class="img-fluid rounded" alt="{{ candidate.name }}" style="max-height: 100px;">
+                                        {% endif %}
                                     </td>
                                     <td>
                                         <div class="btn-group">
