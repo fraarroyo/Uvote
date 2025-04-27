@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block title %}{{ election.title }} - UVote{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="text-center mb-5">
+        <h1 class="display-4 mb-3">{{ election.title }}</h1>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <p class="lead text-muted">Cast your vote wisely. Your choice matters!</p>
+            </div>
+        </div>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('confirm_vote', election_id=election.id) }}">
+        {% for position in positions %}
+        <div class="card mb-5 position-card">
+            <div class="card-header bg-primary text-white py-3">
+                <h3 class="card-title mb-0 position-title">{{ position.title }}</h3>
+                {% if position.description %}
+                <small class="text-white-50">{{ position.description }}</small>
+                {% endif %}
+            </div>
+            <div class="card-body py-4">
+                <div class="row g-4">
+                    {% for candidate in position.candidates %}
+                    <div class="col-md-4">
+                        <div class="card h-100 candidate-card">
+                            {% if candidate.image_path %}
+                            <div class="candidate-image-container">
+                                <img src="{{ url_for('static', filename=candidate.image_path) }}"
+                                     class="card-img-top candidate-image"
+                                     alt="{{ candidate.name }}"
+                                     data-bs-toggle="modal"
+                                     data-bs-target="#imageModal{{ candidate.id }}">
+                            </div>
+                            {% else %}
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light candidate-image-placeholder">
+                                <i class="fas fa-user fa-5x text-muted"></i>
+                            </div>
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold mb-2">{{ candidate.name }}</h5>
+                                {% if candidate.party_list %}
+                                <div class="party-list-badge mb-2">
+                                    <span class="badge bg-secondary">{{ candidate.party_list }}</span>
+                                </div>
+                                {% endif %}
+                                {% if candidate.description %}
+                                <p class="card-text text-muted mb-3">{{ candidate.description }}</p>
+                                {% endif %}
+                                <div class="form-check custom-radio">
+                                    <input class="form-check-input" type="radio"
+                                           name="vote_{{ position.id }}" value="{{ candidate.id }}"
+                                           id="candidate{{ candidate.id }}" required>
+                                    <label class="form-check-label vote-label" for="candidate{{ candidate.id }}">
+                                        Vote for {{ candidate.name }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal for candidate image -->
+                    {% if candidate.image_path %}
+                    <div class="modal fade" id="imageModal{{ candidate.id }}" tabindex="-1" aria-labelledby="imageModalLabel{{ candidate.id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header border-0">
+                                    <h5 class="modal-title fw-bold" id="imageModalLabel{{ candidate.id }}">{{ candidate.name }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-center p-0">
+                                    <img src="{{ url_for('static', filename=candidate.image_path) }}"
+                                         class="img-fluid rounded"
+                                         alt="{{ candidate.name }}"
+                                         style="max-height: 80vh;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+
+                    <!-- Abstain Option -->
+                    <div class="col-md-4">
+                        <div class="card h-100 candidate-card abstain-card">
+                            <div class="card-img-top d-flex align-items-center justify-content-center bg-light candidate-image-placeholder">
+                                <i class="fas fa-ban fa-5x text-muted"></i>
+                            </div>
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold mb-2">Abstain</h5>
+                                <p class="card-text text-muted mb-3">Choose to abstain from voting for this position</p>
+                                <div class="form-check custom-radio">
+                                    <input class="form-check-input" type="radio"
+                                           name="vote_{{ position.id }}" value="abstain"
+                                           id="abstain_{{ position.id }}" required>
+                                    <label class="form-check-label vote-label" for="abstain_{{ position.id }}">
+                                        Abstain from voting
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="d-grid gap-3 mb-5">
+            <button type="submit" class="btn btn-primary btn-lg py-3 submit-vote-btn">
+                <i class="fas fa-check-circle me-2"></i>Review and Submit Vote
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </form>
+</div>
+
+<style>
+.position-card {
+    border: none;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.position-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+}
+
+.candidate-card {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.candidate-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.1);
+}
+
+.abstain-card {
+    background-color: #f8f9fa;
+}
+
+.candidate-image-container {
+    position: relative;
+    height: 250px;
+    overflow: hidden;
+}
+
+.candidate-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    cursor: pointer;
+}
+
+.candidate-image-placeholder {
+    height: 250px;
+    background-color: #f8f9fa;
+}
+
+.party-list-badge {
+    margin-top: -0.5rem;
+}
+
+.party-list-badge .badge {
+    font-size: 0.85rem;
+    font-weight: 500;
+    padding: 0.5em 1em;
+}
+
+.custom-radio {
+    padding: 1rem;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: 0.5rem;
+    transition: background-color 0.2s;
+}
+
+.custom-radio:hover {
+    background-color: #f8f9fa;
+}
+
+.vote-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-check-input:checked ~ .vote-label {
+    color: var(--bs-primary);
+}
+
+.submit-vote-btn {
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    border-radius: 0.5rem;
+}
+
+.submit-vote-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(var(--bs-primary-rgb), 0.15);
+}
+
+.modal-content {
+    border: none;
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+}
+
+@media (max-width: 768px) {
+    .candidate-image-container {
+        height: 200px;
+    }
+    
+    .position-title {
+        font-size: 1.25rem;
+    }
+}
+</style>
+{% endblock %} 

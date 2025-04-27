@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}Register - UVote{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow-sm mt-5">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Register for UVote</h2>
+                    
+                    
+                    <form method="POST" action="{{ url_for('main.register') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="form-text">Your email will be used as your username for login.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="student_id" name="student_id" required>
+                            <div class="form-text">Your student ID will be used as your password for login.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="college_id" class="form-label">College</label>
+                            <select class="form-select" id="college_id" name="college_id" required>
+                                <option value="" selected disabled>Select your college</option>
+                                {% for college in colleges %}
+                                <option value="{{ college.id }}">{{ college.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Register</button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Already have an account? <a href="{{ url_for('main.login') }}">Login here</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

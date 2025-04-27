@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Your Vote - {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h2 class="mb-0">Confirm Your Vote</h2>
+        </div>
+        <div class="card-body">
+            <h3 class="mb-4">{{ election.title }}</h3>
+            <form method="POST" action="{{ url_for('main.cast_vote', election_id=election.id) }}">
+                {% for position in election.positions %}
+                <div class="mb-4">
+                    <h4>{{ position.title }}</h4>
+                    <div class="card">
+                        <div class="card-body">
+                            {% set vote_value = selections[position.id|string] %}
+                            {% if vote_value == 'abstain' %}
+                                <span class="text-muted">Abstained</span>
+                                <input type="hidden" name="vote_{{ position.id }}" value="abstain">
+                            {% else %}
+                                {% set candidate = position.candidates|selectattr('id', 'equalto', vote_value|int)|first %}
+                                <div class="d-flex align-items-center">
+                                    {% if candidate and candidate.image_path %}
+                                    <img src="{{ url_for('static', filename=candidate.image_path) }}" 
+                                         class="rounded-circle me-3" 
+                                         style="width: 50px; height: 50px; object-fit: cover;"
+                                         alt="{{ candidate.name }}">
+                                    {% else %}
+                                    <div class="rounded-circle bg-light me-3 d-flex align-items-center justify-content-center"
+                                         style="width: 50px; height: 50px;">
+                                        <i class="fas fa-user text-muted"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <h5 class="mb-1">{{ candidate.name }}</h5>
+                                        <p class="text-muted mb-0">{{ candidate.description }}</p>
+                                        {% if candidate.party_list %}
+                                            <span class="badge bg-secondary">{{ candidate.party_list.name }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <input type="hidden" name="vote_{{ position.id }}" value="{{ candidate.id }}">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Please review your selections carefully. Once submitted, your votes cannot be changed.
+                </div>
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('main.election', election_id=election.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Edit
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check me-2"></i>Confirm and Submit Votes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

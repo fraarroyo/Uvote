@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Party Lists - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Manage Party Lists</h1>
+            <p class="text-muted mb-0">View and manage all party lists</p>
+        </div>
+        <div>
+            <a href="{{ url_for('main.admin_dashboard') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPartyListModal">
+                <i class="fas fa-plus me-2"></i>Add Party List
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            {% if party_lists %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Description</th>
+                            <th>Created At</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for party_list in party_lists %}
+                        <tr>
+                            <td>
+                                {% if party_list.image_path %}
+                                <img src="{{ url_for('static', filename='party_images/' + party_list.image_path) }}" 
+                                     alt="{{ party_list.name }}" 
+                                     class="rounded-circle me-2" 
+                                     style="width: 40px; height: 40px; object-fit: cover;">
+                                {% endif %}
+                                {{ party_list.name }}
+                            </td>
+                            <td>{{ party_list.description }}</td>
+                            <td>{{ party_list.created_at|datetimeformat }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('main.edit_party_list', id=party_list.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="deletePartyList({{ party_list.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">No party lists found</h5>
+                <p class="text-muted">Click the "Add Party List" button to create one.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add Party List Modal -->
+<div class="modal fade" id="addPartyListModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Party List</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ url_for('main.manage_party_lists') }}" method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Party Logo</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Party List</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this party list? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deletePartyList(id) {
+    if (confirm('Are you sure you want to delete this party list? This action cannot be undone.')) {
+        fetch(`/admin/party-lists/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error deleting party list: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the party list.');
+        });
+    }
+}
+</script>
+{% endblock %} 

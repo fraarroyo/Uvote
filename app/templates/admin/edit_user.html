@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Edit User</h5>
+                    <a href="{{ url_for('main.manage_users') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Users
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if user.is_default_admin %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        This is the default administrator account. Some restrictions apply to protect system integrity.
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username" 
+                                   value="{{ user.username }}" required
+                                   {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                   value="{{ user.email }}" required
+                                   {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="student_id" class="form-label">Student ID</label>
+                            <input type="text" class="form-control" id="student_id" name="student_id" 
+                                   value="{{ user.student_id }}" required
+                                   {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="college_id" class="form-label">College</label>
+                            <select class="form-select" id="college_id" name="college_id" required
+                                    {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                                <option value="">Select College</option>
+                                {% for college in colleges %}
+                                <option value="{{ college.id }}" {% if college.id == user.college_id %}selected{% endif %}>
+                                    {{ college.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select" id="role" name="role" required
+                                    {% if user.is_default_admin %}disabled{% endif %}>
+                                <option value="voter" {% if user.role == 'voter' %}selected{% endif %}>Voter</option>
+                                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
+                            </select>
+                            {% if user.is_default_admin %}
+                            <div class="form-text text-muted">
+                                <i class="fas fa-lock me-1"></i>
+                                The role of the default admin cannot be changed
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">New Password</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control" id="password" name="password"
+                                       placeholder="Leave blank to keep current password"
+                                       {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword()"
+                                        {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Leave blank to keep the current password</div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <button type="submit" class="btn btn-primary"
+                                    {% if user.is_default_admin and current_user.id != user.id %}disabled{% endif %}>
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                            {% if not user.is_default_admin %}
+                            <button type="button" class="btn btn-danger" onclick="confirmDelete({{ user.id }})">
+                                <i class="fas fa-trash me-2"></i>Delete User
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Warning!</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to delete this user?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="deleteUser()">
+                    <i class="fas fa-trash me-2"></i>Delete User
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let userIdToDelete = null;
+
+function confirmDelete(userId) {
+    userIdToDelete = userId;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+function deleteUser() {
+    if (!userIdToDelete) return;
+    
+    fetch(`/admin/users/${userIdToDelete}/delete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        },
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            window.location.href = "{{ url_for('main.manage_users') }}";
+        } else {
+            showAlert('danger', data.message || 'Error deleting user');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'Error deleting user. Please try again.');
+    });
+}
+
+function togglePassword() {
+    const passwordInput = document.getElementById('password');
+    const type = passwordInput.type === 'password' ? 'text' : 'password';
+    passwordInput.type = type;
+    
+    const icon = event.currentTarget.querySelector('i');
+    icon.className = type === 'password' ? 'fas fa-eye' : 'fas fa-eye-slash';
+}
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+</script>
+{% endblock %} 

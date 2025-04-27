@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block title %}Election Results - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Election Results</h1>
+            <p class="text-muted mb-0">{{ election.title }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('main.manage_elections') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back to Elections
+            </a>
+            <a href="{{ url_for('main.election_results', election_id=election.id) }}" class="btn btn-primary">
+                <i class="fas fa-download me-2"></i>Export Results
+            </a>
+            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetConfirmModal">
+                <i class="fas fa-redo-alt me-2"></i>Reset Results
+            </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Election Summary</h5>
+            <div class="row">
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Total Votes Cast:</strong></p>
+                    <h3>{{ total_votes }}</h3>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Status:</strong></p>
+                    <h3>{{ 'Active' if election.is_active else 'Ended' }}</h3>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>End Date:</strong></p>
+                    <h3>{{ election.end_date|datetimeformat }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for position in positions %}
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">{{ position.position.title }}</h5>
+            <span class="badge bg-primary">Total Votes: {{ position.total_votes }}</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 40%">Candidate</th>
+                            <th style="width: 20%">Party List</th>
+                            <th style="width: 15%">Votes</th>
+                            <th style="width: 25%">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in position.candidates %}
+                        <tr {% if result.is_abstain %}class="table-light"{% endif %}>
+                            <td>
+                                {% if result.is_abstain %}
+                                <div class="d-flex align-items-center">
+                                    <div class="rounded-circle bg-light me-2 d-flex align-items-center justify-content-center"
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-minus-circle text-muted"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-muted">ABSTAIN</div>
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="d-flex align-items-center">
+                                    {% if result.candidate.image_path %}
+                                    <img src="{{ url_for('static', filename=result.candidate.image_path) }}" 
+                                         alt="{{ result.candidate.name }}" 
+                                         class="rounded-circle me-2" 
+                                         style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                    <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center"
+                                         style="width: 40px; height: 40px;">
+                                        <i class="fas fa-user text-white"></i>
+                                    </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ result.candidate.name }}</div>
+                                        {% if position.position.title.upper().strip() == 'REPRESENTATIVE' and result.candidate.college %}
+                                        <small class="text-muted">{{ result.candidate.college.name }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if not result.is_abstain %}
+                                    {% if result.candidate.party_list %}
+                                    <div class="d-flex align-items-center">
+                                        {% if result.candidate.party_list.image_path %}
+                                        <img src="{{ url_for('static', filename='party_images/' + result.candidate.party_list.image_path) }}"
+                                             alt="{{ result.candidate.party_list.name }}"
+                                             class="rounded me-2"
+                                             style="width: 30px; height: 30px; object-fit: cover;">
+                                        {% endif %}
+                                        <span>{{ result.candidate.party_list.name }}</span>
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted">Independent</span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="fw-bold">{{ result.votes }}</td>
+                            <td>
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar {% if result.votes == position.candidates|map(attribute='votes')|max %}bg-success{% endif %} {% if result.is_abstain %}bg-secondary{% endif %}" 
+                                         role="progressbar" 
+                                         style="width: {{ result.percentage }}%;" 
+                                         aria-valuenow="{{ result.percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        {{ "%.1f"|format(result.percentage) }}%
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="resetConfirmModal" tabindex="-1" aria-labelledby="resetConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="resetConfirmModalLabel">Confirm Reset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning!</strong> This action cannot be undone.
+                    </div>
+                    <p>Are you sure you want to reset all votes for this election?</p>
+                    <ul>
+                        <li>All votes will be permanently deleted</li>
+                        <li>Voters will be able to vote again</li>
+                        <li>This action will be logged in the audit trail</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('main.reset_election_results', election_id=election.id) }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-redo-alt me-2"></i>Reset Results
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+// ... existing styles ...
+</style>
+
+<script>
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    `;
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.card'));
+}
+</script>
+{% endblock %} 

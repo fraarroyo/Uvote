@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}Confirm Your Vote - {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Confirm Your Vote</h2>
+    <div class="alert alert-info">
+        Please review your selections carefully. Once confirmed, you cannot change your vote.
+    </div>
+
+    {% if confirmation_code %}
+    <div class="alert alert-warning">
+        <h4>Verification Code: {{ confirmation_code }}</h4>
+        <p>Please enter this code below to confirm your vote. This adds an extra layer of security to ensure your vote is intentional.</p>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-body">
+            <h3>Your Selections:</h3>
+            <ul class="list-group mb-4">
+                {% for position in election.positions %}
+                <li class="list-group-item">
+                    <strong>{{ position.title }}:</strong>
+                    {% set vote_value = selections[position.id|string] %}
+                    {% if vote_value == 'abstain' %}
+                        <span class="text-muted">Abstained</span>
+                    {% else %}
+                        {% set candidate = position.candidates|selectattr('id', 'eq', vote_value|int)|first %}
+                        {{ candidate.name }} {% if candidate.party_list %}({{ candidate.party_list.name }}){% endif %}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+
+            <form action="{{ url_for('main.cast_vote', election_id=election.id) }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group mb-3">
+                    <label for="confirmation_code">Enter Verification Code:</label>
+                    <input type="text" class="form-control" id="confirmation_code" name="confirmation_code" required
+                           pattern="[0-9]{6}" maxlength="6" placeholder="Enter the 6-digit code shown above">
+                    <small class="form-text text-muted">Please enter the 6-digit verification code shown above to confirm your vote.</small>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('main.election', election_id=election.id) }}" class="btn btn-secondary">Go Back</a>
+                    <button type="submit" class="btn btn-primary">Confirm and Cast Vote</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

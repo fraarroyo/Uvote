@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Colleges - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm rounded mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="{{ url_for('main.admin_dashboard') }}">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+            <div class="d-flex align-items-center">
+                <h5 class="mb-0 text-muted">
+                    <i class="fas fa-university me-2 text-primary"></i>Manage Colleges
+                </h5>
+            </div>
+            <div>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addCollegeModal">
+                    <i class="fas fa-plus me-2"></i>Add College
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            {% if colleges %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Code</th>
+                                <th>Description</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for college in colleges %}
+                                <tr>
+                                    <td>{{ college.name }}</td>
+                                    <td>{{ college.code }}</td>
+                                    <td>{{ college.description or 'No description' }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    onclick="editCollege('{{ college.id }}', '{{ college.name }}', '{{ college.code }}', '{{ college.description }}')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    onclick="confirmDelete('{{ college.id }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-university fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Colleges Found</h5>
+                    <p class="mb-0">Add your first college to get started.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add College Modal -->
+<div class="modal fade" id="addCollegeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New College</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ url_for('main.add_college') }}" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Code</label>
+                        <input type="text" class="form-control" id="code" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add College</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit College Modal -->
+<div class="modal fade" id="editCollegeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit College</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="editCollegeForm" method="POST">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Name</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_code" class="form-label">Code</label>
+                        <input type="text" class="form-control" id="edit_code" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_description" class="form-label">Description</label>
+                        <textarea class="form-control" id="edit_description" name="description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editCollege(id, name, code, description) {
+    document.getElementById('edit_name').value = name;
+    document.getElementById('edit_code').value = code;
+    document.getElementById('edit_description').value = description;
+    document.getElementById('editCollegeForm').action = `/admin/colleges/${id}/edit`;
+    
+    new bootstrap.Modal(document.getElementById('editCollegeModal')).show();
+}
+
+function confirmDelete(collegeId) {
+    if (confirm('Are you sure you want to delete this college? This action cannot be undone.')) {
+        fetch(`/admin/colleges/${collegeId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'Failed to delete college');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while deleting the college');
+        });
+    }
+}
+</script>
+
+<style>
+.navbar {
+    padding: 1rem;
+}
+
+.navbar-brand {
+    font-weight: 500;
+    color: #495057;
+}
+
+.navbar-brand:hover {
+    color: #0d6efd;
+}
+
+.card {
+    border: none;
+}
+
+.table th {
+    font-weight: 600;
+    color: #495057;
+}
+
+.btn-group .btn {
+    padding: 0.25rem 0.5rem;
+}
+
+.form-control:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+}
+</style>
+{% endblock %} 

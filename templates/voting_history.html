@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Your Voting History{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Your Voting History</h2>
+    
+    {% if voting_history %}
+        {% for election_id, data in voting_history.items() %}
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">{{ data.election.title }}</h3>
+            </div>
+            <div class="card-body">
+                {% if data.votes %}
+                    {% set first_vote = data.votes.values()|first %}
+                    <p class="text-muted">
+                        <i class="fas fa-calendar me-2"></i>
+                        Voted on: {{ first_vote.candidate.votes[0].timestamp|string|truncate(16, True, '') }}
+                    </p>
+                    
+                    <div class="row">
+                        {% for position_id, vote_data in data.votes.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">{{ vote_data.position.title }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        {% if vote_data.candidate.image_path %}
+                                        <img src="{{ url_for('serve_candidate_image', filename=vote_data.candidate.image_path) }}" 
+                                             class="rounded-circle me-3" 
+                                             style="width: 50px; height: 50px; object-fit: cover;"
+                                             alt="{{ vote_data.candidate.name }}">
+                                        {% else %}
+                                        <div class="rounded-circle bg-light me-3 d-flex align-items-center justify-content-center"
+                                             style="width: 50px; height: 50px;">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </div>
+                                        {% endif %}
+                                        <div>
+                                            <h6 class="mb-1">Your Vote:</h6>
+                                            <p class="mb-0">{{ vote_data.candidate.name }}</p>
+                                            <small class="text-muted">{{ vote_data.candidate.description }}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        No votes found for this election.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            You haven't voted in any elections yet.
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 
