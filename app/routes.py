@@ -13,6 +13,7 @@ import io
 import PyPDF2
 import re
 import secrets
+from app.forms import ElectionForm
 
 bp = Blueprint('main', __name__)
 
@@ -267,18 +268,14 @@ def delete_party_list(party_id):
 @login_required
 @admin_required
 def create_election():
-    if request.method == 'POST':
-        title = request.form.get('title')
-        description = request.form.get('description')
-        start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
-        end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
-        
+    form = ElectionForm()
+    if form.validate_on_submit():
         election = Election(
-            title=title,
-            description=description,
-            start_date=start_date,
-            end_date=end_date,
-            is_active=True
+            title=form.title.data,
+            description=form.description.data,
+            start_date=form.start_date.data,
+            end_date=form.end_date.data,
+            is_active=form.is_active.data
         )
         
         db.session.add(election)
@@ -286,7 +283,7 @@ def create_election():
         flash('Election created successfully!', 'success')
         return redirect(url_for('main.manage_elections'))
         
-    return render_template('admin/create_election.html')
+    return render_template('admin/create_election.html', form=form)
 
 @bp.route('/admin/elections')
 @login_required
@@ -567,7 +564,6 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('You have been logged out.', 'info')
     return redirect(url_for('main.index'))
 
 @bp.route('/dashboard')

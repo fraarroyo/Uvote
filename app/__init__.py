@@ -21,11 +21,7 @@ def create_app(config_class=Config):
     # Make csrf_token available in templates
     @app.context_processor
     def inject_csrf_token():
-        token = generate_csrf()
-        return dict(
-            csrf_token=token,
-            csrf_token_value=token
-        )
+        return dict(csrf_token_value=generate_csrf())
 
     # Ensure upload directory exists
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)

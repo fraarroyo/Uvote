@@ -3,6 +3,9 @@
 {% block title %}Election Results - UVote{% endblock %}
 
 {% block content %}
+<!-- Add Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -49,6 +52,11 @@
             <span class="badge bg-primary">Total Votes: {{ position.total_votes }}</span>
         </div>
         <div class="card-body">
+            <!-- Add canvas for the chart -->
+            <div class="chart-container mb-4">
+                <canvas id="chart-{{ position.position.id }}"></canvas>
+            </div>
+            
             <div class="table-responsive">
                 <table class="table">
                     <thead>
@@ -171,10 +179,106 @@
 </div>
 
 <style>
-// ... existing styles ...
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+}
+
+.card {
+    margin-bottom: 2rem;
+}
+
+.progress {
+    height: 20px;
+    border-radius: 10px;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+
+.badge {
+    padding: 0.5em 1em;
+}
 </style>
 
 <script>
+// Initialize charts for each position
+{% for position in positions %}
+    const ctx{{ position.position.id }} = document.getElementById('chart-{{ position.position.id }}').getContext('2d');
+    new Chart(ctx{{ position.position.id }}, {
+        type: 'bar',
+        data: {
+            labels: [
+                {% for result in position.candidates %}
+                    '{{ result.is_abstain|default(false) and "ABSTAIN" or result.candidate.name }}',
+                {% endfor %}
+            ],
+            datasets: [{
+                label: 'Votes',
+                data: [
+                    {% for result in position.candidates %}
+                        {{ result.votes }},
+                    {% endfor %}
+                ],
+                backgroundColor: [
+                    {% for result in position.candidates %}
+                        {% if result.is_abstain %}
+                            'rgba(108, 117, 125, 0.8)',
+                        {% elif result.votes == position.candidates|map(attribute='votes')|max %}
+                            'rgba(40, 167, 69, 0.8)',
+                        {% else %}
+                            'rgba(0, 123, 255, 0.8)',
+                        {% endif %}
+                    {% endfor %}
+                ],
+                borderColor: [
+                    {% for result in position.candidates %}
+                        {% if result.is_abstain %}
+                            'rgba(108, 117, 125, 1)',
+                        {% elif result.votes == position.candidates|map(attribute='votes')|max %}
+                            'rgba(40, 167, 69, 1)',
+                        {% else %}
+                            'rgba(0, 123, 255, 1)',
+                        {% endif %}
+                    {% endfor %}
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            label += context.parsed.y + ' votes';
+                            return label;
+                        }
+                    }
+                }
+            }
+        }
+    });
+{% endfor %}
+
 function showAlert(type, message) {
     const alertDiv = document.createElement('div');
     alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
@@ -185,4 +289,4 @@ function showAlert(type, message) {
     document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.card'));
 }
 </script>
-{% endblock %} 
+{% endblock %}

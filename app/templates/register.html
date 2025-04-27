@@ -10,19 +10,35 @@
                 <div class="card-body p-4">
                     <h2 class="text-center mb-4">Register for UVote</h2>
                     
+                    <!-- Login Instructions -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Important Login Information</h5>
+                        <hr>
+                        <p class="mb-2">After registration, you will use:</p>
+                        <ul class="mb-0">
+                            <li><strong>Username:</strong> Your email address</li>
+                            <li><strong>Password:</strong> Your student ID number</li>
+                        </ul>
+                    </div>
                     
                     <form method="POST" action="{{ url_for('main.register') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <input type="email" class="form-control" id="email" name="email" required>
-                            <div class="form-text">Your email will be used as your username for login.</div>
+                            <div class="form-text text-primary">
+                                <i class="fas fa-user me-1"></i>
+                                This email will be your username for logging in
+                            </div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="student_id" class="form-label">Student ID</label>
                             <input type="text" class="form-control" id="student_id" name="student_id" required>
-                            <div class="form-text">Your student ID will be used as your password for login.</div>
+                            <div class="form-text text-primary">
+                                <i class="fas fa-key me-1"></i>
+                                Your student ID will be your initial password
+                            </div>
                         </div>
                         
                         <div class="mb-3">
@@ -36,7 +52,9 @@
                         </div>
                         
                         <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Register</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-user-plus me-2"></i>Register
+                            </button>
                         </div>
                     </form>
                     
@@ -48,4 +66,29 @@
         </div>
     </div>
 </div>
+
+<style>
+.alert-info {
+    background-color: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+}
+
+.alert-heading {
+    color: #0d6efd;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-text {
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.form-text.text-primary {
+    color: #0d6efd !important;
+}
+</style>
 {% endblock %} 
