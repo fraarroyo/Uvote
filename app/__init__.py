@@ -45,8 +45,12 @@ def create_app(config_class=Config):
     # Initialize Flask-Migrate
     migrate = Migrate(app, db)
 
-    # Import models for user_loader
-    from app.models import User
+    # Import models
+    from app.models import (
+        User, College, EligibleStudent, VoterList, PartyList,
+        Platform, Election, Position, Candidate, Vote,
+        StudentNumber, UserList, AuditLog
+    )
 
     @login_manager.user_loader
     def load_user(user_id):
@@ -56,4 +60,21 @@ def create_app(config_class=Config):
     from app.routes import bp as main_bp
     app.register_blueprint(main_bp)
 
-    return app 
+    # Create database tables
+    with app.app_context():
+        db.create_all()
+        # Create default college if it doesn't exist
+        if not College.query.first():
+            default_college = College(name='Default College')
+            db.session.add(default_college)
+            db.session.commit()
+            # Create default admin user
+            User.create_default_admin(default_college.id)
+
+    return app
+
+# Create the application instance
+app = create_app()
+
+# Make both create_app and app available for import
+__all__ = ['create_app', 'app'] 

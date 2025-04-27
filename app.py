@@ -9,3 +9,4 @@ if __name__ == '__main__':
         db.create_all()
         init_default_admin()
     app.run(debug=True)
+    
