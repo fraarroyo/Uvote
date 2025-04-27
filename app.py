@@ -2,7 +2,7 @@ from app import create_app
 from extensions import db
 from app.routes import init_default_admin
 
-app = create_app()
+application = create_app()
 
 if __name__ == '__main__':
     with app.app_context():
