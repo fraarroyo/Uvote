@@ -10,12 +10,13 @@
                 <div class="card-body p-4">
                     <h2 class="text-center mb-4">Login to UVote</h2>
                     
-                    <form method="POST" action="{{ url_for('main.login') }}" autocomplete="on">
+                    
+                    <form method="POST" action="{{ url_for('main.login') }}">
                         {{ form.hidden_tag() }}
                         
                         <div class="mb-3">
                             {{ form.username.label(class="form-label") }}
-                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), autocomplete="username") }}
+                            {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
                             {% if form.username.errors %}
                                 {% for error in form.username.errors %}
                                     <div class="invalid-feedback">{{ error }}</div>
@@ -25,7 +26,7 @@
                         
                         <div class="mb-3">
                             {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="current-password") }}
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
                             {% if form.password.errors %}
                                 {% for error in form.password.errors %}
                                     <div class="invalid-feedback">{{ error }}</div>

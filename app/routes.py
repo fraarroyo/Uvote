@@ -5,7 +5,8 @@ from app.models import User, College, UserList, StudentNumber, PartyList, Platfo
 from app.decorators import admin_required
 from .forms import LoginForm, CandidateForm, PositionForm, FlaskForm
 from flask_wtf import FlaskForm
-from flask_wtf.csrf import generate_csrf
+from flask_wtf.csrf import validate_csrf
+from wtforms.validators import ValidationError
 from datetime import datetime
 import os
 from werkzeug.utils import secure_filename
@@ -78,7 +79,9 @@ def manage_party_lists():
             filename = secure_filename(image.filename)
             base, ext = os.path.splitext(filename)
             filename = f"{base}_{int(time.time())}{ext}"
-            image.save(os.path.join(current_app.config['PARTY_IMAGES'], filename))
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.join('app', 'static', 'party_images'), exist_ok=True)
+            image.save(os.path.join('app', 'static', 'party_images', filename))
             party_list.image_path = filename
             
         db.session.add(party_list)
@@ -135,6 +138,7 @@ def edit_party_list(id):
 def add_candidate():
     form = CandidateForm()
     
+    # Populate form choices
     form.party_list.choices = [(p.id, p.name) for p in PartyList.query.all()]
     form.position_id.choices = [(p.id, f"{p.title} ({p.election.title})") for p in Position.query.all()]
     form.college_id.choices = [(c.id, c.name) for c in College.query.order_by(College.name).all()]
@@ -147,10 +151,16 @@ def add_candidate():
                 filename = secure_filename(file.filename)
                 base, ext = os.path.splitext(filename)
                 filename = f"{base}_{int(time.time())}{ext}"
-                file.save(os.path.join(current_app.config['CANDIDATE_IMAGES'], filename))
-                image_path = filename
+                
+                # Create directory if it doesn't exist
+                upload_dir = os.path.join('app', 'static', 'images', 'candidates')
+                os.makedirs(upload_dir, exist_ok=True)
+                
+                file.save(os.path.join(upload_dir, filename))
+                image_path = f"images/candidates/{filename}"
 
         try:
+            # Get the position to check if it's a representative position
             position = Position.query.get(form.position_id.data)
             is_representative = position and position.title.upper().strip() == 'REPRESENTATIVE'
             
@@ -417,161 +427,77 @@ def manage_candidates():
 @login_required
 @admin_required
 def manage_users():
-    try:
-        # Load users with their relationships
-        users = User.query.options(
-            db.joinedload(User.college)
-        ).order_by(User.created_at.desc()).all()
-        
-        # Load colleges for the add user form
-        colleges = College.query.order_by(College.name).all()
-        
-        return render_template(
-            'admin/manage_users.html',
-            users=users,
-            colleges=colleges
-        )
-    except Exception as e:
-        current_app.logger.error(f"Error in manage_users route: {str(e)}")
-        flash('An error occurred while loading users. Please try again.', 'danger')
-        return redirect(url_for('main.admin_dashboard'))
+    users = User.query.all()
+    colleges = College.query.all()
+    return render_template('admin/manage_users.html', users=users, colleges=colleges)
 
-@bp.route('/admin/users/add', methods=['POST'])
+@bp.route('/admin/users/<int:user_id>/edit', methods=['GET', 'POST'])
 @login_required
 @admin_required
-def add_user():
-    try:
-        # Get form data
-        username = request.form.get('username')
-        email = request.form.get('email', '').lower()
-        student_id = request.form.get('student_id')
-        password = request.form.get('password')
-        role = request.form.get('role')
-        college_id = request.form.get('college_id')
-        
-        # Validate required fields
-        if not all([username, email, password, role, college_id]):
-            flash('All fields are required.', 'danger')
-            return redirect(url_for('main.manage_users'))
-        
-        # Check if username exists
-        if User.query.filter_by(username=username).first():
-            flash('Username already exists.', 'danger')
-            return redirect(url_for('main.manage_users'))
-        
-        # Check if email exists
-        if User.query.filter_by(email=email).first():
-            flash('Email already exists.', 'danger')
-            return redirect(url_for('main.manage_users'))
-        
-        # Check if student ID exists (if provided)
-        if student_id and User.query.filter_by(student_id=student_id).first():
-            flash('Student ID already exists.', 'danger')
-            return redirect(url_for('main.manage_users'))
-        
-        # Create new user
-        user = User(
-            username=username,
-            email=email,
-            student_id=student_id,
-            role=role,
-            college_id=college_id
-        )
-        user.set_password(password)
-        
-        db.session.add(user)
-        
-        # Create audit log
-        audit_log = AuditLog(
-            user_id=current_user.id,
-            action='CREATE_USER',
-            details=f'Created new user: {username} (Role: {role})',
-            ip_address=request.remote_addr,
-            category='user_management'
-        )
-        db.session.add(audit_log)
-        
-        db.session.commit()
-        flash('User added successfully!', 'success')
-        
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error adding user: {str(e)}")
-        flash('Error adding user. Please try again.', 'danger')
-        
-    return redirect(url_for('main.manage_users'))
-
-@bp.route('/admin/users/<int:id>/edit', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def edit_user(id):
-    user = User.query.get_or_404(id)
+def edit_user(user_id):
+    user = User.query.get_or_404(user_id)
     colleges = College.query.order_by(College.name).all()
     
-    # Prevent editing default admin
+    # Prevent editing role of default admin
     if user.is_default_admin and current_user.id != user.id:
         flash('The default admin account cannot be modified by other users.', 'danger')
         return redirect(url_for('main.manage_users'))
     
     if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        student_id = request.form.get('student_id')
+        college_id = request.form.get('college_id')
+        role = request.form.get('role')
+        new_password = request.form.get('password')
+        
+        # Prevent changing role of default admin
+        if user.is_default_admin and role != 'admin':
+            flash('Cannot change the role of the default admin account.', 'danger')
+            return render_template('admin/edit_user.html', user=user, colleges=colleges)
+        
+        # Validate college selection
+        if not college_id:
+            flash('College selection is required.', 'danger')
+            return render_template('admin/edit_user.html', user=user, colleges=colleges)
+            
+        # Check if username exists (excluding current user)
+        existing_user = User.query.filter(
+            User.username == username,
+            User.id != user_id
+        ).first()
+        if existing_user:
+            flash('Username already exists.', 'danger')
+            return render_template('admin/edit_user.html', user=user, colleges=colleges)
+            
+        # Check if email exists (excluding current user)
+        existing_user = User.query.filter(
+            User.email == email,
+            User.id != user_id
+        ).first()
+        if existing_user:
+            flash('Email already exists.', 'danger')
+            return render_template('admin/edit_user.html', user=user, colleges=colleges)
+            
+        # Check if student ID exists (excluding current user)
+        existing_user = User.query.filter(
+            User.student_id == student_id,
+            User.id != user_id
+        ).first()
+        if existing_user:
+            flash('Student ID already exists.', 'danger')
+            return render_template('admin/edit_user.html', user=user, colleges=colleges)
+        
         try:
-            username = request.form.get('username')
-            email = request.form.get('email', '').lower()
-            student_id = request.form.get('student_id')
-            college_id = request.form.get('college_id')
-            role = request.form.get('role')
-            new_password = request.form.get('password')
-            
-            # Check for duplicate username
-            existing_user = User.query.filter(
-                User.username == username,
-                User.id != id
-            ).first()
-            if existing_user:
-                flash('Username already exists.', 'danger')
-                return render_template('admin/edit_user.html', user=user, colleges=colleges)
-            
-            # Check for duplicate email
-            existing_user = User.query.filter(
-                User.email == email,
-                User.id != id
-            ).first()
-            if existing_user:
-                flash('Email already exists.', 'danger')
-                return render_template('admin/edit_user.html', user=user, colleges=colleges)
-            
-            # Check for duplicate student ID
-            if student_id:
-                existing_user = User.query.filter(
-                    User.student_id == student_id,
-                    User.id != id
-                ).first()
-                if existing_user:
-                    flash('Student ID already exists.', 'danger')
-                    return render_template('admin/edit_user.html', user=user, colleges=colleges)
-            
-            # Update user fields
             user.username = username
             user.email = email
             user.student_id = student_id
             user.college_id = college_id
-            
-            # Only allow role change for non-default admin
-            if not user.is_default_admin:
+            if not user.is_default_admin:  # Only allow role change for non-default admin
                 user.role = role
             
             if new_password:
                 user.set_password(new_password)
-            
-            # Create audit log
-            audit_log = AuditLog(
-                user_id=current_user.id,
-                action='UPDATE_USER',
-                details=f'Updated user: {username}',
-                ip_address=request.remote_addr,
-                category='user_management'
-            )
-            db.session.add(audit_log)
             
             db.session.commit()
             flash('User updated successfully!', 'success')
@@ -579,94 +505,84 @@ def edit_user(id):
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error updating user: {str(e)}")
             flash('Error updating user. Please try again.', 'danger')
             return render_template('admin/edit_user.html', user=user, colleges=colleges)
-    
+        
     return render_template('admin/edit_user.html', user=user, colleges=colleges)
 
-@bp.route('/admin/users/<int:id>/delete', methods=['POST'])
+@bp.route('/admin/users/<int:user_id>/delete', methods=['POST'])
 @login_required
 @admin_required
-def delete_user(id):
+def delete_user(user_id):
     try:
-        user = User.query.get_or_404(id)
-        
-        # Prevent deleting default admin
-        if user.is_default_admin:
-            flash('The default admin account cannot be deleted.', 'danger')
+        # Get the user to delete
+        user_to_delete = User.query.get_or_404(user_id)
+
+        # Get the admin email from config
+        admin_email = current_app.config.get('ADMIN_EMAIL', 'admin@uvote.com')
+
+        # Don't allow deleting the default admin
+        if user_to_delete.email == admin_email:
+            flash('Cannot delete the default admin account.', 'error')
             return redirect(url_for('main.manage_users'))
-        
-        # Prevent deleting own account
-        if user.id == current_user.id:
-            flash('You cannot delete your own account.', 'danger')
+
+        # Don't allow deleting yourself
+        if user_to_delete.id == current_user.id:
+            flash('Cannot delete your own account.', 'error')
             return redirect(url_for('main.manage_users'))
-        
-        # Delete related records
-        Vote.query.filter_by(user_id=id).delete()
-        AuditLog.query.filter_by(user_id=id).delete()
-        
-        # Create audit log for deletion
-        audit_log = AuditLog(
-            user_id=current_user.id,
-            action='DELETE_USER',
-            details=f'Deleted user: {user.username}',
-            ip_address=request.remote_addr,
-            category='user_management'
-        )
-        db.session.add(audit_log)
-        
-        # Delete the user
-        db.session.delete(user)
-        db.session.commit()
-        
-        flash('User deleted successfully.', 'success')
-        
+
+        # Delete associated votes and audit logs first
+        try:
+            # Start a transaction
+            db.session.begin_nested()
+            
+            # Delete associated votes
+            Vote.query.filter_by(user_id=user_id).delete()
+            
+            # Delete associated audit logs
+            AuditLog.query.filter_by(user_id=user_id).delete()
+            
+            # Delete the user
+            db.session.delete(user_to_delete)
+            
+            # Commit the transaction
+            db.session.commit()
+            
+            flash('User deleted successfully.', 'success')
+            return redirect(url_for('main.manage_users'))
+
+        except Exception as e:
+            # Roll back the transaction
+            db.session.rollback()
+            current_app.logger.error(f"Error deleting user {user_id}: {str(e)}")
+            flash('Error deleting user. Please try again.', 'error')
+            return redirect(url_for('main.manage_users'))
+
     except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error deleting user: {str(e)}")
-        flash('Error deleting user. Please try again.', 'danger')
-    
-    return redirect(url_for('main.manage_users'))
+        current_app.logger.error(f"Error in delete_user route: {str(e)}")
+        flash('Error processing request. Please try again.', 'error')
+        return redirect(url_for('main.manage_users'))
 
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
+    
+    # Clear any existing flash messages
+    session.pop('_flashes', None)
+    
     form = LoginForm()
     if form.validate_on_submit():
-        # Try to find user by email first, then by username
-        user = User.query.filter_by(email=form.username.data.lower()).first()
+        # Try to find user by email first, then by username as fallback
+        user = User.query.filter_by(email=form.username.data).first()
         if not user:
             user = User.query.filter_by(username=form.username.data).first()
-        
-        if not user:
-            flash('No account found with this email/username. Please check your credentials or register if you don\'t have an account.', 'danger')
-            return render_template('login.html', form=form)
-        
-        if not user.check_password(form.password.data):
-            if user.is_default_admin:
-                flash('Incorrect password. For admin account, use the default password.', 'danger')
-            else:
-                flash('Incorrect password (student ID). Please use your student ID number as your password.', 'danger')
-            return render_template('login.html', form=form)
-        
-        login_user(user, remember=form.remember.data)
-        next_page = request.args.get('next')
-        flash('Login successful! Welcome back.', 'success')
-        return redirect(next_page if next_page else url_for('main.index'))
-    
-    # Show form validation errors
-    if form.errors:
-        for field, errors in form.errors.items():
-            for error in errors:
-                if field == 'username':
-                    flash(f'Username/Email error: {error}', 'danger')
-                elif field == 'password':
-                    flash(f'Password error: {error}', 'danger')
-                else:
-                    flash(f'{field}: {error}', 'danger')
-    
+            
+        if user and user.check_password(form.password.data):
+            login_user(user, remember=form.remember.data)
+            next_page = request.args.get('next')
+            return redirect(next_page if next_page else url_for('main.index'))
+        flash('Invalid username/email or password', 'danger')
     return render_template('login.html', form=form)
 
 @bp.route('/logout')
@@ -678,45 +594,48 @@ def logout():
 @bp.route('/dashboard')
 @login_required
 def dashboard():
-    try:
-        if current_user.is_admin:
-            # Admin dashboard
-            elections = Election.query.all()
-            candidates = Candidate.query.all()
-            users = User.query.all()
-            party_lists = PartyList.query.all()
-            
-            stats = {
-                'total_elections': len(elections) if elections else 0,
-                'active_elections': len([e for e in elections if e.is_active]) if elections else 0,
-                'total_candidates': len(candidates) if candidates else 0,
-                'total_users': len(users) if users else 0,
-                'total_voters': len([u for u in users if u.role == 'voter']) if users else 0,
-                'total_admins': len([u for u in users if u.role == 'admin']) if users else 0,
-                'total_party_lists': len(party_lists) if party_lists else 0
-            }
-            
-            return render_template('dashboard/admin.html', 
-                                elections=elections if elections else [],
-                                candidates=candidates if candidates else [],
-                                users=users if users else [],
-                                party_lists=party_lists if party_lists else [],
-                                stats=stats)
-        else:
-            # Voter dashboard
-            active_elections = Election.query.filter_by(is_active=True).all()
-            return render_template('dashboard/voter.html', 
-                                elections=active_elections if active_elections else [])
-    except Exception as e:
-        current_app.logger.error(f"Error in dashboard route: {str(e)}")
-        flash('An error occurred while loading the dashboard. Please try again.', 'danger')
-        return redirect(url_for('main.index'))
+    if current_user.role == 'admin':
+        elections = Election.query.all()
+        candidates = Candidate.query.all()
+        users = User.query.all()
+        
+        stats = {
+            'total_elections': len(elections),
+            'active_elections': len([e for e in elections if e.is_active]),
+            'total_candidates': len(candidates),
+            'total_voters': len([u for u in users if u.role == 'voter'])
+        }
+        
+        return render_template('dashboard/admin.html', elections=elections, stats=stats)
+    else:
+        active_elections = Election.query.filter_by(is_active=True).all()
+        return render_template('dashboard/voter.html', elections=active_elections)
 
 @bp.route('/admin/dashboard')
 @login_required
 @admin_required
 def admin_dashboard():
-    return redirect(url_for('main.dashboard'))
+    elections = Election.query.all()
+    candidates = Candidate.query.all()
+    users = User.query.all()
+    party_lists = PartyList.query.all()
+    
+    stats = {
+        'total_elections': len(elections),
+        'active_elections': len([e for e in elections if e.is_active]),
+        'total_candidates': len(candidates),
+        'total_users': len(users),
+        'total_voters': len([u for u in users if u.role == 'voter']),
+        'total_admins': len([u for u in users if u.role == 'admin']),
+        'total_party_lists': len(party_lists)
+    }
+    
+    return render_template('dashboard/admin.html', 
+                         elections=elections,
+                         candidates=candidates,
+                         users=users,
+                         party_lists=party_lists,
+                         stats=stats)
 
 @bp.route('/admin/user-lists/upload', methods=['POST'])
 @login_required
@@ -810,97 +729,137 @@ def register():
     if current_user.is_authenticated:
         return redirect(url_for('main.index'))
     
-    colleges = College.query.all()
+    # Create registration form
+    form = FlaskForm()
     
-    if request.method == 'POST':
-        email = request.form.get('email', '').lower().strip()
-        student_id = request.form.get('student_id', '').strip()
-        college_id = request.form.get('college_id', '').strip()
+    if request.method == 'POST' and form.validate_on_submit():
+        email = request.form.get('email').strip().lower()  # Convert email to lowercase
+        student_id = request.form.get('student_id').strip()
+        college_id = request.form.get('college_id')
         
-        errors = []
+        current_app.logger.info(f"Registration attempt - Student ID: {student_id}, College ID: {college_id}")
         
-        # Validate required fields
-        if not email:
-            errors.append('Email is required')
+        # Input validation
         if not student_id:
-            errors.append('Student ID is required')
+            flash('Student ID is required', 'danger')
+            return redirect(url_for('main.register'))
+            
+        if not email:
+            flash('Email is required', 'danger')
+            return redirect(url_for('main.register'))
+            
         if not college_id:
-            errors.append('College selection is required')
-            
-        # Validate email format
-        if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            errors.append('Invalid email format')
-            
-        # Create username from email (part before @)
-        username = email.split('@')[0] if email else None
+            flash('Please select your college', 'danger')
+            return redirect(url_for('main.register'))
         
-        # Check if username is already taken
-        if username and User.query.filter_by(username=username).first():
-            errors.append('Username already exists. Please use a different email.')
-            
-        # Check if email is already registered
-        if email and User.query.filter_by(email=email).first():
-            errors.append('Email address is already registered')
-            
-        # Check if student ID is already registered
-        if student_id and User.query.filter_by(student_id=student_id).first():
-            errors.append('Student ID is already registered')
-            
-        # Validate college selection
-        selected_college = None
-        if college_id:
-            try:
-                college_id = int(college_id)
-                selected_college = College.query.get(college_id)
-                if not selected_college:
-                    errors.append('Invalid college selection')
-            except ValueError:
-                errors.append('Invalid college selection')
+        # Check if user already exists (case-insensitive email check)
+        existing_user = User.query.filter(db.func.lower(User.email) == email).first()
+        if existing_user:
+            flash('Email already exists', 'danger')
+            return redirect(url_for('main.register'))
         
-        if errors:
-            for error in errors:
-                flash(error, 'danger')
-            return render_template('register.html', 
-                                colleges=colleges,
-                                prev_email=email,
-                                prev_student_id=student_id,
-                                prev_college_id=college_id)
+        if User.query.filter_by(student_id=student_id).first():
+            flash('Student ID already exists', 'danger')
+            return redirect(url_for('main.register'))
         
+        # Verify student number against enrollment list
+        college = College.query.get(college_id)
+        if not college:
+            flash('Invalid college selected', 'danger')
+            return redirect(url_for('main.register'))
+        
+        # Get the most recent enrollment list for the selected college
+        user_list = UserList.query.filter_by(college_id=college_id).order_by(UserList.id.desc()).first()
+        
+        if not user_list:
+            flash('No enrollment list found for this college. Please contact the administrator.', 'danger')
+            return redirect(url_for('main.register'))
+        
+        # Check if student number exists in the enrollment list
+        student_found = False
         try:
-            # Create new user with all required fields
+            current_app.logger.info(f"Checking enrollment list: {user_list.filename}")
+            with open(user_list.file_path, 'rb') as pdf_file:
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+                
+                # Extract all text from the PDF
+                full_text = ""
+                for page_num, page in enumerate(pdf_reader.pages):
+                    page_text = page.extract_text()
+                    full_text += page_text
+                    current_app.logger.info(f"Page {page_num + 1} content: {page_text[:200]}...")
+                
+                # Log the full text for debugging
+                current_app.logger.info(f"Full PDF text: {full_text[:1000]}...")
+                
+                # Split into lines and look for the student ID
+                lines = full_text.split('\n')
+                current_app.logger.info(f"Total lines in PDF: {len(lines)}")
+                
+                for line_num, line in enumerate(lines):
+                    # Clean the line
+                    cleaned_line = line.strip()
+                    if not cleaned_line:
+                        continue
+                        
+                    # Log each non-empty line for debugging
+                    current_app.logger.info(f"Line {line_num + 1}: {cleaned_line}")
+                    
+                    # Try different ways to find the student ID
+                    # 1. Direct match
+                    if student_id == cleaned_line:
+                        student_found = True
+                        current_app.logger.info(f"Found exact match in line {line_num + 1}")
+                        break
+                        
+                    # 2. Check if student ID is a word in the line
+                    words = cleaned_line.split()
+                    if student_id in words:
+                        student_found = True
+                        current_app.logger.info(f"Found student ID in words of line {line_num + 1}")
+                        break
+                        
+                    # 3. Check if student ID is part of the line (for cases where it might be part of a longer string)
+                    if student_id in cleaned_line:
+                        student_found = True
+                        current_app.logger.info(f"Found student ID as substring in line {line_num + 1}")
+                        break
+                
+                if not student_found:
+                    current_app.logger.warning(f"Student ID {student_id} not found in enrollment list")
+                    flash('Your Student ID was not found in the enrollment list. Please verify your Student ID or contact the administrator.', 'danger')
+                    return redirect(url_for('main.register'))
+                
+        except Exception as e:
+            current_app.logger.error(f"Error processing enrollment list: {str(e)}")
+            flash('Error verifying student ID. Please contact the administrator.', 'danger')
+            return redirect(url_for('main.register'))
+        
+        # If student ID is found, create the user
+        try:
             user = User(
-                username=username,
+                username=student_id,  # Set username to student_id instead of email
                 email=email,
                 student_id=student_id,
                 college_id=college_id,
-                role='voter',
-                is_default_admin=False
+                role='voter'
             )
-            user.set_password(student_id)  # Use student ID as initial password
+            user.set_password(student_id)
             
             db.session.add(user)
             db.session.commit()
-            
-            # Log successful registration
-            current_app.logger.info(f'New user registered: {email} (Student ID: {student_id})')
-            
-            # Automatically log in the user
-            login_user(user)
-            
-            flash('Registration successful! Welcome to UVote.', 'success')
-            return redirect(url_for('main.dashboard'))
-            
+            current_app.logger.info(f"Successfully registered user with Student ID: {student_id}")
+            flash('Registration successful! You can now login using your Student ID as both username and password.', 'success')
+            return redirect(url_for('main.login'))
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f'Registration error: {str(e)}')
-            flash('An error occurred during registration. Please try again.', 'danger')
-            return render_template('register.html', 
-                                colleges=colleges,
-                                prev_email=email,
-                                prev_student_id=student_id,
-                                prev_college_id=college_id)
+            current_app.logger.error(f"Error creating user: {str(e)}")
+            flash('Error during registration. Please try again.', 'danger')
+            return redirect(url_for('main.register'))
     
-    return render_template('register.html', colleges=colleges)
+    # GET request - show registration form
+    colleges = College.query.all()
+    return render_template('register.html', colleges=colleges, form=form)
 
 @bp.route('/admin/positions')
 @login_required
@@ -1038,22 +997,90 @@ def edit_college(college_id):
 @login_required
 @admin_required
 def delete_college(college_id):
-    college = College.query.get_or_404(college_id)
-    
-    # Check if college has any users or candidates
-    if college.users or college.candidates:
+    try:
+        # Validate CSRF token
+        try:
+            validate_csrf(request.form.get('csrf_token'))
+        except ValidationError:
+            return jsonify({'success': False, 'message': 'Invalid CSRF token'}), 400
+            
+        college = College.query.get_or_404(college_id)
+        
+        # Check for related records
+        if db.session.query(User).filter_by(college_id=college_id).count() > 0:
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete college that has associated users. Please remove or reassign all users first.'
+            }), 400
+            
+        if db.session.query(Candidate).filter_by(college_id=college_id).count() > 0:
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete college that has associated candidates. Please remove or reassign all candidates first.'
+            }), 400
+            
+        if db.session.query(UserList).filter_by(college_id=college_id).count() > 0:
+            return jsonify({
+                'success': False,
+                'message': 'Cannot delete college that has associated user lists. Please delete the user lists first.'
+            }), 400
+        
+        try:
+            db.session.delete(college)
+            db.session.commit()
+            return jsonify({'success': True, 'message': 'College deleted successfully'})
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Database error deleting college {college_id}: {str(e)}")
+            return jsonify({
+                'success': False,
+                'message': 'Database error occurred while deleting college.'
+            }), 500
+            
+    except Exception as e:
+        current_app.logger.error(f"Error in delete_college route: {str(e)}")
         return jsonify({
             'success': False,
-            'message': 'Cannot delete college that has associated users or candidates.'
-        }), 400
-    
-    try:
-        db.session.delete(college)
-        db.session.commit()
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'message': str(e)}), 500
+            'message': 'An unexpected error occurred.'
+        }), 500
+
+@bp.route('/admin/users/add', methods=['POST'])
+@login_required
+@admin_required
+def add_user():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        email = request.form.get('email')
+        password = request.form.get('password')
+        role = request.form.get('role')
+        
+        # Check if username or email already exists
+        if User.query.filter_by(username=username).first():
+            flash('Username already exists.', 'danger')
+            return redirect(url_for('main.manage_users'))
+            
+        if User.query.filter_by(email=email).first():
+            flash('Email already exists.', 'danger')
+            return redirect(url_for('main.manage_users'))
+        
+        # Create new user
+        user = User(
+            username=username,
+            email=email,
+            role=role,
+            is_active=True
+        )
+        user.set_password(password)
+        
+        try:
+            db.session.add(user)
+            db.session.commit()
+            flash('User added successfully!', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding user. Please try again.', 'danger')
+            
+    return redirect(url_for('main.manage_users'))
 
 @bp.route('/admin/user-lists', methods=['GET'])
 @login_required
@@ -1341,95 +1368,14 @@ def reset_election_results(election_id):
         flash('Error resetting election results: ' + str(e), 'danger')
         return redirect(url_for('main.election_results', election_id=election_id))
 
-@bp.route('/vote/<int:election_id>', methods=['GET', 'POST'])
-@login_required
-def vote(election_id):
-    election = Election.query.get_or_404(election_id)
-    
-    # Check if election is active
-    now = datetime.utcnow()
-    if now < election.start_date:
-        flash('This election has not started yet.', 'warning')
-        return redirect(url_for('elections'))
-    if now > election.end_date:
-        flash('This election has ended.', 'warning')
-        return redirect(url_for('elections'))
-    
-    # Check if user has already voted
-    existing_vote = Vote.query.filter_by(
-        election_id=election_id,
-        voter_id=current_user.id
-    ).first()
-    
-    if existing_vote:
-        flash('You have already voted in this election.', 'info')
-        return redirect(url_for('elections'))
-    
-    candidates = Candidate.query.filter_by(election_id=election_id).all()
-    
-    if request.method == 'POST':
-        try:
-            if election.election_type == 'single_choice':
-                candidate_id = request.form.get('vote')
-                if not candidate_id:
-                    flash('Please select a candidate.', 'danger')
-                    return render_template('vote.html', election=election, candidates=candidates)
-                
-                vote = Vote(
-                    election_id=election_id,
-                    voter_id=current_user.id,
-                    candidate_id=candidate_id
-                )
-                db.session.add(vote)
-                
-            else:  # multiple_choice
-                candidate_ids = request.form.getlist('votes[]')
-                if not candidate_ids:
-                    flash('Please select at least one candidate.', 'danger')
-                    return render_template('vote.html', election=election, candidates=candidates)
-                
-                if len(candidate_ids) > election.max_choices:
-                    flash(f'You can only select up to {election.max_choices} candidates.', 'danger')
-                    return render_template('vote.html', election=election, candidates=candidates)
-                
-                for candidate_id in candidate_ids:
-                    vote = Vote(
-                        election_id=election_id,
-                        voter_id=current_user.id,
-                        candidate_id=candidate_id
-                    )
-                    db.session.add(vote)
-            
-            db.session.commit()
-            flash('Your vote has been recorded successfully!', 'success')
-            return redirect(url_for('elections'))
-            
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f'Error recording vote: {str(e)}')
-            flash('An error occurred while recording your vote. Please try again.', 'danger')
-            return render_template('vote.html', election=election, candidates=candidates)
-    
-    return render_template('vote.html', election=election, candidates=candidates)
-
-@bp.route('/static/<path:filename>')
-def serve_static(filename):
-    return send_from_directory('static', filename)
-
-@bp.route('/static/images/candidates/<path:filename>')
-def serve_candidate_image(filename):
-    return send_from_directory(current_app.config['CANDIDATE_IMAGES'], filename)
-
-@bp.route('/static/party_images/<path:filename>')
-def serve_party_image(filename):
-    return send_from_directory(current_app.config['PARTY_IMAGES'], filename)
-
 # Add this function to create default admin during app initialization
-def init_default_admin(college_id):
-    try:
-        # Create default admin user
-        User.create_default_admin(college_id)
-        print("Default admin user created successfully")
-    except Exception as e:
-        print(f"Error creating default admin: {str(e)}")
-        raise 
+def init_default_admin():
+    # Create a default college if none exists
+    default_college = College.query.first()
+    if not default_college:
+        default_college = College(name='Administration')
+        db.session.add(default_college)
+        db.session.commit()
+    
+    # Create default admin user
+    User.create_default_admin(default_college.id) 

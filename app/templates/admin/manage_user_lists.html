@@ -46,35 +46,14 @@
                                 <a href="{{ url_for('main.download_user_list', id=user_list.id) }}" class="btn btn-sm btn-info" title="Download">
                                     <i class="fas fa-download"></i>
                                 </a>
-                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user_list.id }}" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <form action="{{ url_for('main.delete_user_list', id=user_list.id) }}" method="POST" style="display: inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this user list? This action cannot be undone.')" title="Delete">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
-
-                        <!-- Delete Modal -->
-                        <div class="modal fade" id="deleteModal{{ user_list.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ user_list.id }}" aria-hidden="true">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title" id="deleteModalLabel{{ user_list.id }}">Confirm Delete</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        Are you sure you want to delete "{{ user_list.filename }}"?
-                                        <br>
-                                        <small class="text-muted">This will also delete all associated student numbers.</small>
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                        <form action="{{ url_for('main.delete_user_list', id=user_list.id) }}" method="POST">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
-                                            <button type="submit" class="btn btn-danger">Delete</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -92,7 +71,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form action="{{ url_for('main.upload_user_list') }}" method="POST" enctype="multipart/form-data">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="college" class="form-label">College</label>

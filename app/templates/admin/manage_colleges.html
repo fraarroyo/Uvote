@@ -149,13 +149,24 @@ function editCollege(id, name, code, description) {
 
 function confirmDelete(collegeId) {
     if (confirm('Are you sure you want to delete this college? This action cannot be undone.')) {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
         fetch(`/admin/colleges/${collegeId}/delete`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken
+            },
+            body: new URLSearchParams({
+                'csrf_token': csrfToken
+            }).toString()
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(err => Promise.reject(err));
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 window.location.reload();
@@ -165,7 +176,11 @@ function confirmDelete(collegeId) {
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while deleting the college');
+            if (error.message) {
+                alert(error.message);
+            } else {
+                alert('An error occurred while deleting the college');
+            }
         });
     }
 }

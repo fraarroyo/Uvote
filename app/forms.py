@@ -15,7 +15,7 @@ class CandidateForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class LoginForm(FlaskForm):
-    username = StringField('Email or Username', validators=[DataRequired()])
+    username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit = SubmitField('Sign In')

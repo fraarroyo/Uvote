@@ -12,36 +12,20 @@
                     
                     <!-- Login Instructions -->
                     <div class="alert alert-info mb-4">
-                        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Important Registration Information</h5>
+                        <h5 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Important Login Information</h5>
                         <hr>
-                        <p class="mb-2">Please note:</p>
+                        <p class="mb-2">After registration, you will use:</p>
                         <ul class="mb-0">
-                            <li>Use your official student email address</li>
-                            <li>Your student ID will be your initial password</li>
-                            <li>Make sure to select your correct college</li>
+                            <li><strong>Username:</strong> Your email address</li>
+                            <li><strong>Password:</strong> Your student ID number</li>
                         </ul>
                     </div>
-
-                    <!-- Flash Messages -->
-                    {% with messages = get_flashed_messages(with_categories=true) %}
-                        {% if messages %}
-                            {% for category, message in messages %}
-                                <div class="alert alert-{{ category }} alert-dismissible fade show mb-3" role="alert">
-                                    <i class="fas {% if category == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %} me-2"></i>
-                                    {{ message }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    {% endwith %}
                     
-                    <form method="POST" action="{{ url_for('main.register') }}" autocomplete="on">
+                    <form method="POST" action="{{ url_for('main.register') }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
-                            <input type="email" class="form-control" id="email" name="email" 
-                                   value="{{ prev_email or '' }}" required autocomplete="email"
-                                   placeholder="Enter your student email">
+                            <input type="email" class="form-control" id="email" name="email" required>
                             <div class="form-text text-primary">
                                 <i class="fas fa-user me-1"></i>
                                 This email will be your username for logging in
@@ -50,9 +34,7 @@
                         
                         <div class="mb-3">
                             <label for="student_id" class="form-label">Student ID</label>
-                            <input type="text" class="form-control" id="student_id" name="student_id" 
-                                   value="{{ prev_student_id or '' }}" required autocomplete="username"
-                                   placeholder="Enter your student ID number">
+                            <input type="text" class="form-control" id="student_id" name="student_id" required>
                             <div class="form-text text-primary">
                                 <i class="fas fa-key me-1"></i>
                                 Your student ID will be your initial password
@@ -61,29 +43,24 @@
                         
                         <div class="mb-3">
                             <label for="college_id" class="form-label">College</label>
-                            <select class="form-select" id="college_id" name="college_id" required autocomplete="organization">
+                            <select class="form-select" id="college_id" name="college_id" required>
                                 <option value="" selected disabled>Select your college</option>
                                 {% for college in colleges %}
-                                <option value="{{ college.id }}" {% if prev_college_id and prev_college_id|int == college.id %}selected{% endif %}>
-                                    {{ college.name }}
-                                </option>
+                                <option value="{{ college.id }}">{{ college.name }}</option>
                                 {% endfor %}
                             </select>
-                            <div class="form-text text-primary">
-                                <i class="fas fa-university me-1"></i>
-                                Select your current college
-                            </div>
                         </div>
                         
-                        <div class="d-grid gap-2">
+                        <div class="d-grid">
                             <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-user-plus me-2"></i>Register
                             </button>
-                            <a href="{{ url_for('main.login') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-sign-in-alt me-2"></i>Already have an account? Login
-                            </a>
                         </div>
                     </form>
+                    
+                    <div class="text-center mt-3">
+                        <p class="mb-0">Already have an account? <a href="{{ url_for('main.login') }}">Login here</a></p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,18 +89,6 @@
 
 .form-text.text-primary {
     color: #0d6efd !important;
-}
-
-.alert {
-    border-radius: 0.5rem;
-}
-
-.alert-danger {
-    border-left: 4px solid #dc3545;
-}
-
-.alert-success {
-    border-left: 4px solid #198754;
 }
 </style>
 {% endblock %} 

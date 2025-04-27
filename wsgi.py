@@ -2,7 +2,7 @@ import sys
 import os
 
 # Add your project directory to the Python path
-path = '/home/yourusername/yourapplication'
+path = '/home/fraarroyo/Uvote'
 if path not in sys.path:
     sys.path.append(path)
 

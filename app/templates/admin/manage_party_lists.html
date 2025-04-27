@@ -37,8 +37,10 @@
                         <tr>
                             <td>
                                 {% if party_list.image_path %}
-                                <img src="{{ url_for('main.serve_party_image', filename=party_list.image_path) }}" 
-                                     class="img-fluid rounded" alt="{{ party_list.name }}" style="max-height: 100px;">
+                                <img src="{{ url_for('static', filename='party_images/' + party_list.image_path) }}" 
+                                     alt="{{ party_list.name }}" 
+                                     class="rounded-circle me-2" 
+                                     style="width: 40px; height: 40px; object-fit: cover;">
                                 {% endif %}
                                 {{ party_list.name }}
                             </td>
