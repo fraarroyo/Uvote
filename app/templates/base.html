@@ -4,25 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}UVote - Student Voting System{% endblock %}</title>
-    
+
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
-            --primary-color: #2563eb;
-            --primary-dark: #1d4ed8;
+            --primary-color: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #818cf8;
             --secondary-color: #64748b;
-            --success-color: #22c55e;
+            --success-color: #10b981;
             --danger-color: #ef4444;
             --warning-color: #f59e0b;
             --info-color: #3b82f6;
             --light-bg: #f8fafc;
             --dark-bg: #1e293b;
+            --gradient-primary: linear-gradient(135deg, var(--primary-color), var(--primary-light));
+            --gradient-success: linear-gradient(135deg, var(--success-color), #34d399);
+            --gradient-danger: linear-gradient(135deg, var(--danger-color), #f87171);
+            --gradient-warning: linear-gradient(135deg, var(--warning-color), #fbbf24);
+            --gradient-info: linear-gradient(135deg, var(--info-color), #60a5fa);
         }
 
         body {
@@ -31,104 +37,150 @@
             color: #334155;
         }
 
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Poppins', sans-serif;
+        }
+
         .navbar {
-            background-color: white;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            background: var(--gradient-primary);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             padding: 1rem 0;
         }
 
         .navbar-brand {
+            font-family: 'Poppins', sans-serif;
             font-weight: 700;
-            font-size: 1.5rem;
-            color: var(--primary-color);
+            font-size: 1.75rem;
+            color: white !important;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .nav-link {
             font-weight: 500;
-            color: var(--secondary-color);
+            color: rgba(255, 255, 255, 0.9) !important;
             padding: 0.5rem 1rem;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            border-radius: 0.5rem;
         }
 
         .nav-link:hover {
-            color: var(--primary-color);
+            color: white !important;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
         }
 
         .nav-link.active {
-            color: var(--primary-color);
+            color: white !important;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .btn {
             font-weight: 500;
-            padding: 0.5rem 1rem;
-            border-radius: 0.5rem;
-            transition: all 0.2s;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            transition: all 0.3s;
         }
 
         .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
+            background: var(--gradient-primary);
+            border: none;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
         }
 
         .btn-primary:hover {
-            background-color: var(--primary-dark);
-            border-color: var(--primary-dark);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px -1px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn-success {
+            background: var(--gradient-success);
+            border: none;
+        }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            border: none;
+        }
+
+        .btn-warning {
+            background: var(--gradient-warning);
+            border: none;
+        }
+
+        .btn-info {
+            background: var(--gradient-info);
+            border: none;
         }
 
         .card {
             border: none;
-            border-radius: 1rem;
+            border-radius: 1.5rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: var(--gradient-primary);
+            color: white;
+            border-bottom: none;
+            padding: 1.5rem;
         }
 
         .form-control {
-            border-radius: 0.5rem;
+            border-radius: 0.75rem;
             padding: 0.75rem 1rem;
-            border: 1px solid #e2e8f0;
+            border: 2px solid #e2e8f0;
+            transition: all 0.3s;
         }
 
         .form-control:focus {
             border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
         .alert {
             border: none;
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             padding: 1rem 1.5rem;
         }
 
         .footer {
-            background-color: white;
-            padding: 2rem 0;
-            margin-top: 3rem;
+            background: white;
+            padding: 3rem 0;
+            margin-top: 4rem;
             border-top: 1px solid #e2e8f0;
         }
 
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
-            width: 8px;
+            width: 10px;
         }
 
         ::-webkit-scrollbar-track {
             background: #f1f5f9;
+            border-radius: 5px;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 4px;
+            background: var(--primary-light);
+            border-radius: 5px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: var(--primary-color);
         }
 
         /* Loading Spinner */
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #f3f3f3;
+            border: 4px solid rgba(79, 70, 229, 0.1);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
@@ -141,19 +193,25 @@
 
         /* Toast Notifications */
         .toast {
-            border-radius: 0.75rem;
+            border-radius: 1rem;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         /* Utility Classes */
-        .shadow-sm { box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important; }
+        .shadow-sm { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important; }
         .shadow { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important; }
         .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1) !important; }
+
+        .bg-gradient-primary { background: var(--gradient-primary) !important; }
+        .bg-gradient-success { background: var(--gradient-success) !important; }
+        .bg-gradient-danger { background: var(--gradient-danger) !important; }
+        .bg-gradient-warning { background: var(--gradient-warning) !important; }
+        .bg-gradient-info { background: var(--gradient-info) !important; }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
+    <nav class="navbar navbar-expand-lg sticky-top">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('main.index') }}">
                 <i class="fas fa-vote-yea me-2"></i>UVote
@@ -207,12 +265,17 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <div class="row">
+            <div class="row align-items-center">
                 <div class="col-md-6">
-                    <h5 class="mb-3">UVote - Student Voting System</h5>
+                    <h5 class="text-primary mb-3">UVote - Student Voting System</h5>
                     <p class="text-muted">Making student elections transparent, secure, and accessible.</p>
                 </div>
                 <div class="col-md-6 text-md-end">
+                    <div class="mb-3">
+                        <a href="#" class="text-muted me-3"><i class="fab fa-facebook fa-lg"></i></a>
+                        <a href="#" class="text-muted me-3"><i class="fab fa-twitter fa-lg"></i></a>
+                        <a href="#" class="text-muted"><i class="fab fa-instagram fa-lg"></i></a>
+                    </div>
                     <p class="mb-0 text-muted">&copy; {{ current_year }} UVote. All rights reserved.</p>
                 </div>
             </div>
@@ -220,8 +283,8 @@
     </footer>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <!-- Custom Scripts -->
     <script>
         // Enable Bootstrap tooltips
@@ -237,4 +300,4 @@
         })
     </script>
 </body>
-</html> 
+</html>

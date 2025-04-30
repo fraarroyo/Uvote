@@ -120,22 +120,21 @@
 function toggleCollegeField() {
     const positionSelect = document.getElementById('position_id');
     const collegeField = document.getElementById('collegeField');
-    const collegeSelect = document.getElementById('college_id');
+    const selectedOption = positionSelect.options[positionSelect.selectedIndex];
+    const positionTitle = selectedOption.text.split(' (')[0].toUpperCase().trim();
     
-    // Get the selected position's text
-    const selectedPosition = positionSelect.options[positionSelect.selectedIndex].text.toUpperCase();
-    
-    if (selectedPosition.includes('REPRESENTATIVE')) {
+    if (positionTitle.includes('REPRESENTATIVE')) {
         collegeField.style.display = 'block';
-        collegeSelect.required = true;
+        document.getElementById('college_id').required = true;
     } else {
         collegeField.style.display = 'none';
-        collegeSelect.required = false;
-        collegeSelect.value = '';
+        document.getElementById('college_id').required = false;
     }
 }
 
-// Call the function on page load to set initial state
-document.addEventListener('DOMContentLoaded', toggleCollegeField);
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCollegeField();
+});
 </script>
-{% endblock %} 
+{% endblock %}

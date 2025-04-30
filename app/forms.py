@@ -15,7 +15,7 @@ class CandidateForm(FlaskForm):
     submit = SubmitField('Submit')
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
+    username = StringField('CSPC Email', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember = BooleanField('Remember Me')
     submit = SubmitField('Sign In')
@@ -32,4 +32,4 @@ class ElectionForm(FlaskForm):
     start_date = DateField('Start Date', validators=[DataRequired()])
     end_date = DateField('End Date', validators=[DataRequired()])
     is_active = BooleanField('Active')
-    submit = SubmitField('Create Election') 
+    submit = SubmitField('Create Election')

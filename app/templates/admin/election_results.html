@@ -1,27 +1,40 @@
 {% extends "base.html" %}
 
-{% block title %}Election Results - UVote{% endblock %}
+{% block title %}Election Results - {{ election.title }}{% endblock %}
 
 {% block content %}
 <!-- Add Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
+    <div class="mb-4">
+        <div class="mb-3">
             <h1 class="h3 mb-0">Election Results</h1>
             <p class="text-muted mb-0">{{ election.title }}</p>
         </div>
-        <div>
-            <a href="{{ url_for('main.manage_elections') }}" class="btn btn-outline-secondary me-2">
-                <i class="fas fa-arrow-left me-2"></i>Back to Elections
-            </a>
-            <a href="{{ url_for('main.election_results', election_id=election.id) }}" class="btn btn-primary">
-                <i class="fas fa-download me-2"></i>Export Results
-            </a>
-            <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetConfirmModal">
-                <i class="fas fa-redo-alt me-2"></i>Reset Results
-            </button>
+        <div class="row g-2">
+            <!-- First Row -->
+            <div class="col-md-6 d-grid">
+                <a href="{{ url_for('main.manage_elections') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Elections
+                </a>
+            </div>
+            <div class="col-md-6 d-grid">
+                <a href="{{ url_for('main.export_election_results', election_id=election.id) }}" class="btn btn-success">
+                    <i class="fas fa-download me-2"></i>Export Results
+                </a>
+            </div>
+            <!-- Second Row -->
+            <div class="col-md-6 d-grid">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#resetConfirmModal">
+                    <i class="fas fa-redo-alt me-2"></i>Reset Results
+                </button>
+            </div>
+            <div class="col-md-6 d-grid">
+                <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteConfirmModal">
+                    <i class="fas fa-trash me-2"></i>Delete Election
+                </button>
+            </div>
         </div>
     </div>
 
@@ -34,12 +47,12 @@
                     <h3>{{ total_votes }}</h3>
                 </div>
                 <div class="col-md-4">
-                    <p class="mb-1"><strong>Status:</strong></p>
-                    <h3>{{ 'Active' if election.is_active else 'Ended' }}</h3>
+                    <p class="mb-1"><strong>Total Registered Voters:</strong></p>
+                    <h3>{{ total_registered }}</h3>
                 </div>
                 <div class="col-md-4">
-                    <p class="mb-1"><strong>End Date:</strong></p>
-                    <h3>{{ election.end_date|datetimeformat }}</h3>
+                    <p class="mb-1"><strong>Overall Turnout:</strong></p>
+                    <h3>{{ "%.1f"|format(total_votes/total_registered*100) if total_registered > 0 else 0 }}%</h3>
                 </div>
             </div>
         </div>
@@ -47,99 +60,177 @@
 
     {% for position in positions %}
     <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">{{ position.position.title }}</h5>
-            <span class="badge bg-primary">Total Votes: {{ position.total_votes }}</span>
+        <div class="card-header">
+            <h5 class="mb-0">{{ position.position.title }}</h5>
+            <small class="text-muted">
+                {% if position.is_representative %}
+                    Total Votes: {{ position.total_votes }} (Each voter can select up to 2 representatives)
+                {% else %}
+                    Total Votes: {{ position.total_votes }}
+                {% endif %}
+            </small>
         </div>
         <div class="card-body">
-            <!-- Add canvas for the chart -->
-            <div class="chart-container mb-4">
-                <canvas id="chart-{{ position.position.id }}"></canvas>
-            </div>
-            
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th style="width: 40%">Candidate</th>
-                            <th style="width: 20%">Party List</th>
-                            <th style="width: 15%">Votes</th>
-                            <th style="width: 25%">Percentage</th>
+                            <th>Candidate</th>
+                            <th>Party List</th>
+                            {% if position.is_representative %}
+                                <th>College</th>
+                                <th>Total Votes</th>
+                                <th>Overall %</th>
+                                <th>College Votes</th>
+                                <th>College Voters</th>
+                                <th>College %</th>
+                            {% else %}
+                                <th>Votes</th>
+                                <th>Percentage</th>
+                            {% endif %}
                         </tr>
                     </thead>
                     <tbody>
                         {% for result in position.candidates %}
-                        <tr {% if result.is_abstain %}class="table-light"{% endif %}>
+                        <tr>
                             <td>
                                 {% if result.is_abstain %}
-                                <div class="d-flex align-items-center">
-                                    <div class="rounded-circle bg-light me-2 d-flex align-items-center justify-content-center"
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-minus-circle text-muted"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold text-muted">ABSTAIN</div>
-                                    </div>
-                                </div>
+                                    <span class="text-muted">Abstain</span>
                                 {% else %}
-                                <div class="d-flex align-items-center">
-                                    {% if result.candidate.image_path %}
-                                    <img src="{{ url_for('static', filename=result.candidate.image_path) }}" 
-                                         alt="{{ result.candidate.name }}" 
-                                         class="rounded-circle me-2" 
-                                         style="width: 40px; height: 40px; object-fit: cover;">
-                                    {% else %}
-                                    <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center"
-                                         style="width: 40px; height: 40px;">
-                                        <i class="fas fa-user text-white"></i>
-                                    </div>
-                                    {% endif %}
-                                    <div>
-                                        <div class="fw-bold">{{ result.candidate.name }}</div>
-                                        {% if position.position.title.upper().strip() == 'REPRESENTATIVE' and result.candidate.college %}
-                                        <small class="text-muted">{{ result.candidate.college.name }}</small>
+                                    <div class="d-flex align-items-center">
+                                        {% if result.candidate.image_path %}
+                                            <img src="{{ url_for('static', filename=result.candidate.image_path) }}" 
+                                                 alt="{{ result.candidate.name }}" 
+                                                 class="rounded-circle me-2" 
+                                                 style="width: 40px; height: 40px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="rounded-circle bg-secondary me-2 d-flex align-items-center justify-content-center"
+                                                 style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user text-white"></i>
+                                            </div>
                                         {% endif %}
+                                        <div>
+                                            <div class="fw-bold">{{ result.candidate.name }}</div>
+                                            {% if position.is_representative and result.candidate.college %}
+                                                <small class="text-muted">{{ result.candidate.college.name }}</small>
+                                            {% endif %}
+                                        </div>
                                     </div>
-                                </div>
                                 {% endif %}
                             </td>
                             <td>
                                 {% if not result.is_abstain %}
                                     {% if result.candidate.party_list %}
-                                    <div class="d-flex align-items-center">
-                                        {% if result.candidate.party_list.image_path %}
-                                        <img src="{{ url_for('static', filename='party_images/' + result.candidate.party_list.image_path) }}"
-                                             alt="{{ result.candidate.party_list.name }}"
-                                             class="rounded me-2"
-                                             style="width: 30px; height: 30px; object-fit: cover;">
-                                        {% endif %}
-                                        <span>{{ result.candidate.party_list.name }}</span>
-                                    </div>
+                                        <div class="d-flex align-items-start">
+                                            {% if result.candidate.party_list.image_path %}
+                                                <img src="{{ url_for('static', filename='party_images/' + result.candidate.party_list.image_path) }}"
+                                                     alt="{{ result.candidate.party_list.name }}"
+                                                     class="rounded me-2"
+                                                     style="width: 30px; height: 30px; object-fit: cover;">
+                                            {% endif %}
+                                            <div>
+                                                <div class="fw-bold">{{ result.candidate.party_list.name }}</div>
+                                                {% if result.candidate.description %}
+                                                <!--<small class="text-muted d-block mt-1">-->
+                                                <!--    {{ result.candidate.description }}-->
+                                                <!--</small>-->
+                                                {% endif %}
+                                            </div>
+                                        </div>
                                     {% else %}
-                                    <span class="text-muted">Independent</span>
+                                        <div>
+                                            <span class="text-muted">Independent</span>
+                                            <!--{% if result.candidate.description %}-->
+                                            <!--<small class="text-muted d-block mt-1">-->
+                                            <!--    {{ result.candidate.description }}-->
+                                            <!--</small>-->
+                                            <!--{% endif %}-->
+                                        </div>
                                     {% endif %}
                                 {% else %}
-                                <span class="text-muted">-</span>
+                                    <span class="text-muted">-</span>
                                 {% endif %}
                             </td>
-                            <td class="fw-bold">{{ result.votes }}</td>
-                            <td>
-                                <div class="progress" style="height: 20px;">
-                                    <div class="progress-bar {% if result.votes == position.candidates|map(attribute='votes')|max %}bg-success{% endif %} {% if result.is_abstain %}bg-secondary{% endif %}" 
-                                         role="progressbar" 
-                                         style="width: {{ result.percentage }}%;" 
-                                         aria-valuenow="{{ result.percentage }}" 
-                                         aria-valuemin="0" 
-                                         aria-valuemax="100">
-                                        {{ "%.1f"|format(result.percentage) }}%
-                                    </div>
-                                </div>
-                            </td>
+                            {% if position.is_representative %}
+                                <td>
+                                    {% if result.is_abstain %}
+                                        <span class="text-muted">-</span>
+                                    {% else %}
+                                        {{ result.candidate.college.name }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ result.votes }}</td>
+                                <td>{{ "%.1f"|format(result.percentage) }}%</td>
+                                <td>
+                                    {% if result.is_abstain %}
+                                        <span class="text-muted">-</span>
+                                    {% else %}
+                                        {{ result.college_votes }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if result.is_abstain %}
+                                        <span class="text-muted">-</span>
+                                    {% else %}
+                                        {{ result.total_college_voters }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if result.is_abstain %}
+                                        <span class="text-muted">-</span>
+                                    {% else %}
+                                        {{ "%.1f"|format(result.college_percentage) }}%
+                                    {% endif %}
+                                </td>
+                            {% else %}
+                                <td>{{ result.votes }}</td>
+                                <td>{{ "%.1f"|format(result.percentage) }}%</td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
+
+            <!-- Progress bars for visualization -->
+            {% for result in position.candidates %}
+                <div class="progress-info mb-3">
+                    {% if result.is_abstain %}
+                        <div class="d-flex justify-content-between">
+                            <span>ABSTAIN</span>
+                            <span>{{ result.votes }} votes ({{ "%.1f"|format(result.percentage) }}%)</span>
+                        </div>
+                    {% else %}
+                        <div class="d-flex justify-content-between">
+                            <span>{{ result.candidate.name }}</span>
+                            <span>{{ result.votes }} votes ({{ "%.1f"|format(result.percentage) }}%)</span>
+                        </div>
+                    {% endif %}
+                    <div class="progress">
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ result.percentage }}%"
+                             aria-valuenow="{{ result.percentage }}" 
+                             aria-valuemin="0" 
+                             aria-valuemax="100">
+                        </div>
+                    </div>
+                    {% if position.is_representative and not result.is_abstain %}
+                        <div class="college-progress mt-1">
+                            <small>College Progress: 
+                                {{ result.college_votes }} out of {{ result.total_college_voters }} voters 
+                                ({{ "%.1f"|format(result.college_percentage) }}%)</small>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" role="progressbar" 
+                                     style="width: {{ result.college_percentage }}%"
+                                     aria-valuenow="{{ result.college_percentage }}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
         </div>
     </div>
     {% endfor %}
@@ -176,15 +267,43 @@
             </div>
         </div>
     </div>
+
+    <!-- Delete Election Modal -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-labelledby="deleteConfirmModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="deleteConfirmModalLabel">Confirm Delete</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        <strong>Warning!</strong> This action cannot be undone.
+                    </div>
+                    <p>Are you sure you want to delete this election?</p>
+                    <ul>
+                        <li>All election data will be permanently deleted</li>
+                        <li>All votes will be permanently deleted</li>
+                        <li>All positions and candidates will be deleted</li>
+                        <li>This action will be logged in the audit trail</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form action="{{ url_for('main.delete_election', id=election.id) }}" method="POST" style="display: inline;">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-2"></i>Delete Election
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
-.chart-container {
-    position: relative;
-    height: 300px;
-    width: 100%;
-}
-
 .card {
     margin-bottom: 2rem;
 }
@@ -202,91 +321,4 @@
     padding: 0.5em 1em;
 }
 </style>
-
-<script>
-// Initialize charts for each position
-{% for position in positions %}
-    const ctx{{ position.position.id }} = document.getElementById('chart-{{ position.position.id }}').getContext('2d');
-    new Chart(ctx{{ position.position.id }}, {
-        type: 'bar',
-        data: {
-            labels: [
-                {% for result in position.candidates %}
-                    '{{ result.is_abstain|default(false) and "ABSTAIN" or result.candidate.name }}',
-                {% endfor %}
-            ],
-            datasets: [{
-                label: 'Votes',
-                data: [
-                    {% for result in position.candidates %}
-                        {{ result.votes }},
-                    {% endfor %}
-                ],
-                backgroundColor: [
-                    {% for result in position.candidates %}
-                        {% if result.is_abstain %}
-                            'rgba(108, 117, 125, 0.8)',
-                        {% elif result.votes == position.candidates|map(attribute='votes')|max %}
-                            'rgba(40, 167, 69, 0.8)',
-                        {% else %}
-                            'rgba(0, 123, 255, 0.8)',
-                        {% endif %}
-                    {% endfor %}
-                ],
-                borderColor: [
-                    {% for result in position.candidates %}
-                        {% if result.is_abstain %}
-                            'rgba(108, 117, 125, 1)',
-                        {% elif result.votes == position.candidates|map(attribute='votes')|max %}
-                            'rgba(40, 167, 69, 1)',
-                        {% else %}
-                            'rgba(0, 123, 255, 1)',
-                        {% endif %}
-                    {% endfor %}
-                ],
-                borderWidth: 1
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 1
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            let label = context.dataset.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += context.parsed.y + ' votes';
-                            return label;
-                        }
-                    }
-                }
-            }
-        }
-    });
-{% endfor %}
-
-function showAlert(type, message) {
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    `;
-    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.card'));
-}
-</script>
 {% endblock %}

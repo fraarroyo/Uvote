@@ -1,4 +1,4 @@
-z{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block title %}Manage Candidates - UVote{% endblock %}
 
@@ -76,12 +76,12 @@ z{% extends "base.html" %}
                                     <td>{{ candidate.position.title }}</td>
                                     <td>{{ candidate.position.election.title }}</td>
                                     <td>
-                                        <select class="form-select form-select-sm" 
+                                        <select class="form-select form-select-sm"
                                                 id="party_list_{{ candidate.id }}"
                                                 onchange="updatePartyList(event, {{ candidate.id }})">
                                             <option value="">Select Party List</option>
                                             {% for party_list in party_lists %}
-                                                <option value="{{ party_list.id }}" 
+                                                <option value="{{ party_list.id }}"
                                                         {% if candidate.party_list_id == party_list.id %}selected{% endif %}>
                                                     {{ party_list.name }}
                                                 </option>
@@ -90,11 +90,11 @@ z{% extends "base.html" %}
                                     </td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ url_for('main.edit_candidate', id=candidate.id) }}" 
+                                            <a href="{{ url_for('main.edit_candidate', id=candidate.id) }}"
                                                class="btn btn-sm btn-outline-primary">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            <button type="button" 
+                                            <button type="button"
                                                     class="btn btn-sm btn-outline-danger"
                                                     onclick="confirmDelete('{{ candidate.id }}')">
                                                 <i class="fas fa-trash"></i>
@@ -150,7 +150,7 @@ function confirmDelete(candidateId) {
 function updatePartyList(event, candidateId) {
     event.preventDefault();
     const partyListId = document.getElementById(`party_list_${candidateId}`).value;
-    
+
     fetch(`/admin/candidate/${candidateId}/update-party-list`, {
         method: 'POST',
         headers: {
@@ -211,4 +211,4 @@ function updatePartyList(event, candidateId) {
     box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
 }
 </style>
-{% endblock %} 
+{% endblock %}

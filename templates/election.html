@@ -24,7 +24,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST" action="{{ url_for('confirm_vote', election_id=election.id) }}">
+    <form method="POST" action="{{ url_for('main.confirm_vote', election_id=election.id) }}">
         {% for position in positions %}
         <div class="card mb-5 position-card">
             <div class="card-header bg-primary text-white py-3">
@@ -82,11 +82,24 @@
                                     <h5 class="modal-title fw-bold" id="imageModalLabel{{ candidate.id }}">{{ candidate.name }}</h5>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <div class="modal-body text-center p-0">
-                                    <img src="{{ url_for('static', filename=candidate.image_path) }}"
-                                         class="img-fluid rounded"
-                                         alt="{{ candidate.name }}"
-                                         style="max-height: 80vh;">
+                                <div class="modal-body">
+                                    <div class="text-center mb-4">
+                                        <img src="{{ url_for('static', filename=candidate.image_path) }}"
+                                             class="img-fluid rounded"
+                                             alt="{{ candidate.name }}"
+                                             style="max-height: 60vh;">
+                                    </div>
+                                    {% if candidate.party_list %}
+                                    <div class="mb-3">
+                                        <span class="badge bg-secondary">{{ candidate.party_list }}</span>
+                                    </div>
+                                    {% endif %}
+                                    {% if candidate.description %}
+                                    <div class="candidate-description">
+                                        <h6 class="fw-bold mb-2">About the Candidate</h6>
+                                        <p class="text-muted">{{ candidate.description }}</p>
+                                    </div>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -123,7 +136,7 @@
             <button type="submit" class="btn btn-primary btn-lg py-3 submit-vote-btn">
                 <i class="fas fa-check-circle me-2"></i>Review and Submit Vote
             </button>
-            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('main.dashboard') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
             </a>
         </div>
@@ -238,4 +251,4 @@
     }
 }
 </style>
-{% endblock %} 
+{% endblock %}

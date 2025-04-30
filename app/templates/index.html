@@ -3,81 +3,191 @@
 {% block title %}Welcome to UVote{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-10">
-            <div class="text-center mb-5">
-                <h1 class="display-4 fw-bold text-primary">Welcome to UVote</h1>
-                <p class="lead text-muted">Your trusted platform for secure and transparent student elections.</p>
-            </div>
-
-            {% if current_user.is_authenticated %}
-                <div class="alert alert-info mb-4">
-                    <h4 class="alert-heading">Welcome back, {{ current_user.username }}!</h4>
-                    <p class="mb-0">
-                        {% if current_user.is_admin %}
-                            You are logged in as an administrator.
-                            <a href="{{ url_for('main.admin_dashboard') }}" class="alert-link">Go to Admin Dashboard</a>
-                        {% else %}
-                            Check out the active elections below and make your voice heard!
-                        {% endif %}
-                    </p>
+<div class="container py-4">
+    <!-- Hero Section -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white hero-card">
+                <div class="card-body py-5">
+                    <div class="row align-items-center">
+                        <div class="col-lg-8">
+                            <h1 class="display-4 fw-bold mb-3">Welcome to UVote</h1>
+                            <p class="lead mb-4">Your trusted platform for secure and transparent student elections. Make your voice heard and be part of the change.</p>
+                            {% if not current_user.is_authenticated %}
+                                <div class="d-flex gap-3">
+                                    <a href="{{ url_for('main.register') }}" class="btn btn-light btn-lg">
+                                        <i class="fas fa-user-plus me-2"></i>Register Now
+                                    </a>
+                                    <a href="{{ url_for('main.login') }}" class="btn btn-outline-light btn-lg">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                                    </a>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-lg-4 d-none d-lg-block text-center">
+                            <i class="fas fa-vote-yea fa-8x opacity-50"></i>
+                        </div>
+                    </div>
                 </div>
-            {% endif %}
+            </div>
+        </div>
+    </div>
 
+    {% if current_user.is_authenticated %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card bg-gradient-success text-white">
+                    <div class="card-body py-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h4 class="mb-2">Welcome back, {{ current_user.username }}!</h4>
+                                <p class="mb-0">
+                                    {% if current_user.is_admin %}
+                                        You are logged in as an administrator.
+                                        <a href="{{ url_for('main.admin_dashboard') }}" class="text-white text-decoration-underline">Go to Admin Dashboard</a>
+                                    {% else %}
+                                        Check out the active elections below and make your voice heard!
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <i class="fas fa-user-circle fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Active Elections Section -->
+    <div class="row mb-5">
+        <div class="col-12">
             <div class="card shadow-sm">
-                <div class="card-body">
-                    <h2 class="card-title h4 mb-4">Active Elections</h2>
-
+                <div class="card-header bg-gradient-primary text-white">
+                    <h2 class="h4 mb-0">
+                        <i class="fas fa-poll me-2"></i>Elections
+                    </h2>
+                </div>
+                <div class="card-body p-0">
                     {% if elections %}
-                        <div class="row row-cols-1 row-cols-md-2 g-4">
+                        <div class="row g-0">
                             {% for election in elections %}
-                                <div class="col">
-                                    <div class="card h-100">
-                                        <div class="card-body">
-                                            <h5 class="card-title">{{ election.title }}</h5>
-                                            <p class="card-text text-muted">{{ election.description }}</p>
-                                            <div class="small text-muted mb-3">
-                                                <div>Start: {{ election.start_date|datetimeformat }}</div>
-                                                <div>End: {{ election.end_date|datetimeformat }}</div>
+                                <div class="col-md-6 p-3 {% if not loop.last %}border-end{% endif %} {% if not loop.last and not loop.first %}border-top{% endif %}">
+                                    <div class="election-card h-100">
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="mb-2">{{ election.title }}</h5>
+                                                <p class="text-muted mb-3">{{ election.description }}</p>
                                             </div>
-                                            {% if current_user.is_authenticated %}
-                                                <a href="{{ url_for('main.election', election_id=election.id) }}" 
-                                                   class="btn btn-primary">View Details</a>
+                                            {% if election.is_active %}
+                                                <span class="badge bg-gradient-success">
+                                                    <i class="fas fa-check-circle me-1"></i>Active
+                                                </span>
                                             {% else %}
-                                                <a href="{{ url_for('main.login') }}" class="btn btn-primary">
-                                                    Login to Vote
-                                                </a>
+                                                <span class="badge bg-gradient-secondary">
+                                                    <i class="fas fa-clock me-1"></i>Inactive
+                                                </span>
                                             {% endif %}
                                         </div>
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-center text-muted mb-2">
+                                                <i class="fas fa-calendar-alt me-2"></i>
+                                                <div>Start: {{ election.start_date|datetimeformat }}</div>
+                                            </div>
+                                            <div class="d-flex align-items-center text-muted">
+                                                <i class="fas fa-calendar-check me-2"></i>
+                                                <div>End: {{ election.end_date|datetimeformat }}</div>
+                                            </div>
+                                        </div>
+                                        {% if current_user.is_authenticated %}
+                                            {% if election.is_active %}
+                                                <a href="{{ url_for('main.election', election_id=election.id) }}" 
+                                                   class="btn btn-primary w-100">
+                                                    <i class="fas fa-vote-yea me-2"></i>View Details
+                                                </a>
+                                            {% else %}
+                                                <button class="btn btn-secondary w-100" disabled>
+                                                    <i class="fas fa-lock me-2"></i>Election Inactive
+                                                </button>
+                                            {% endif %}
+                                        {% else %}
+                                            <a href="{{ url_for('main.login') }}" class="btn btn-primary w-100">
+                                                <i class="fas fa-sign-in-alt me-2"></i>Login to Vote
+                                            </a>
+                                        {% endif %}
                                     </div>
                                 </div>
                             {% endfor %}
                         </div>
                     {% else %}
                         <div class="text-center py-5">
-                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
-                            <p class="text-muted mb-0">No active elections at the moment.</p>
+                            <div class="mb-3">
+                                <i class="fas fa-calendar-times fa-4x text-primary opacity-50"></i>
+                            </div>
+                            <h5 class="text-primary">No Elections</h5>
+                            <p class="text-muted mb-0">Check back later for upcoming elections.</p>
                         </div>
                     {% endif %}
                 </div>
             </div>
+        </div>
+    </div>
 
-            {% if party_lists %}
-                <div class="card shadow-sm mt-4">
+    {% if party_lists %}
+        <!-- Party Lists Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-gradient-info text-white">
+                        <h2 class="h4 mb-0">
+                            <i class="fas fa-users me-2"></i>Party Lists
+                        </h2>
+                    </div>
                     <div class="card-body">
-                        <h2 class="card-title h4 mb-4">Party Lists</h2>
-                        <div class="row row-cols-1 row-cols-md-3 g-4">
+                        <div class="row g-4">
                             {% for party in party_lists %}
-                                <div class="col">
-                                    <div class="card h-100">
+                                <div class="col-md-6">
+                                    <div class="card h-100 party-list-card" data-party-id="{{ party.id }}" data-party-name="{{ party.name|e }}">
                                         {% if party.image_path %}
-                                            <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
-                                                 class="card-img-top" alt="{{ party.name }}">
+                                            <div class="party-image">
+                                                <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
+                                                     class="card-img-top" alt="{{ party.name }}"
+                                                     style="height: 200px; object-fit: cover;">
+                                                <div class="party-overlay bg-gradient-primary">
+                                                    <h3 class="h5 mb-0 text-white">{{ party.name }}</h3>
+                                                </div>
+                                            </div>
+                                        {% else %}
+                                            <div class="card-header bg-gradient-primary text-white py-3">
+                                                <h3 class="h5 mb-0">{{ party.name }}</h3>
+                                            </div>
                                         {% endif %}
                                         <div class="card-body">
-                                            <h5 class="card-title">{{ party.name }}</h5>
-                                            <p class="card-text">{{ party.description }}</p>
+                                            <div class="mb-4">
+                                                <h5 class="text-primary mb-3">
+                                                    <i class="fas fa-info-circle me-2"></i>About the Party
+                                                </h5>
+                                                <p class="card-text">{{ party.description }}</p>
+                                            </div>
+                                            
+                                            <div class="mb-4">
+                                                <h5 class="text-primary mb-3">
+                                                    <i class="fas fa-bullseye me-2"></i>Platform
+                                                </h5>
+                                                <div class="platform-list">
+                                                    {% for platform in party.platforms %}
+                                                        <div class="platform-item">
+                                                            <div class="platform-icon">
+                                                                <i class="fas fa-check text-success"></i>
+                                                            </div>
+                                                            <div class="platform-text">{{ platform }}</div>
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            
+                                            <button class="btn btn-primary w-100 view-candidates-btn" type="button">
+                                                <i class="fas fa-users me-2"></i>View Candidates
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
@@ -85,16 +195,169 @@
                         </div>
                     </div>
                 </div>
-            {% endif %}
+            </div>
+        </div>
+    {% endif %}
+</div>
 
-            {% if not current_user.is_authenticated %}
-                <div class="text-center mt-5">
-                    <h3 class="h5 mb-4">Ready to participate?</h3>
-                    <a href="{{ url_for('main.register') }}" class="btn btn-primary me-2">Register Now</a>
-                    <a href="{{ url_for('main.login') }}" class="btn btn-outline-primary">Login</a>
-                </div>
-            {% endif %}
+<!-- Modal for displaying candidates -->
+<div class="modal fade" id="candidatesModal" tabindex="-1" aria-labelledby="candidatesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title" id="candidatesModalLabel">Candidates</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="candidatesModalBody">
+                <!-- Candidates will be loaded here -->
+            </div>
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<style>
+.hero-card {
+    border-radius: 2rem;
+    overflow: hidden;
+}
+
+.election-card {
+    padding: 1rem;
+    height: 100%;
+    transition: all 0.3s;
+}
+
+.election-card:hover {
+    background-color: #f8fafc;
+}
+
+.party-list-card {
+    transition: transform 0.3s;
+    border: none;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.party-list-card:hover {
+    transform: translateY(-5px);
+}
+
+.party-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.party-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1.5rem;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+}
+
+.platform-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.platform-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.platform-icon {
+    width: 24px;
+    height: 24px;
+    background: rgba(34, 197, 94, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.platform-text {
+    flex: 1;
+    color: #4b5563;
+}
+
+.modal-dialog-scrollable .modal-content {
+    max-height: 90vh;
+}
+
+.badge {
+    padding: 0.5em 1em;
+    font-weight: 500;
+}
+
+.border-end {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.border-top {
+    border-color: rgba(0, 0, 0, 0.1) !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.view-candidates-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var card = btn.closest('.party-list-card');
+            var partyId = card.getAttribute('data-party-id');
+            var partyName = card.getAttribute('data-party-name');
+            
+            fetch(`/party-list/${partyId}/candidates/json`)
+                .then(response => response.json())
+                .then(candidates => {
+                    let html = '';
+                    if (candidates.length === 0) {
+                        html = '<div class="alert alert-info">No candidates found for this party list.</div>';
+                    } else {
+                        html = `<h5 class='mb-4 text-primary'>Candidates for <strong>${partyName}</strong></h5>`;
+                        html += '<div class="row g-4">';
+                        candidates.forEach(candidate => {
+                            html += `
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-start">
+                                                ${candidate.image_url ? 
+                                                    `<img src="${candidate.image_url}" alt="${candidate.name}" 
+                                                          class="rounded-circle me-3" 
+                                                          style="width: 64px; height: 64px; object-fit: cover;">` :
+                                                    `<div class="rounded-circle bg-light me-3 d-flex align-items-center justify-content-center" 
+                                                          style="width: 64px; height: 64px;">
+                                                        <i class="fas fa-user fa-2x text-muted"></i>
+                                                     </div>`
+                                                }
+                                                <div class="flex-grow-1">
+                                                    <h6 class="fw-bold mb-1">${candidate.name}</h6>
+                                                    <div class="badge bg-gradient-primary mb-2">${candidate.position}</div>
+                                                    ${candidate.description ? 
+                                                        `<p class="text-muted small mb-0">${candidate.description}</p>` : 
+                                                        ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        });
+                        html += '</div>';
+                    }
+                    document.getElementById('candidatesModalBody').innerHTML = html;
+                    var modal = new bootstrap.Modal(document.getElementById('candidatesModal'));
+                    modal.show();
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('Failed to load candidates.');
+                });
+        });
+    });
+});
+</script>
+{% endblock %}

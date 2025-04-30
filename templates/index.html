@@ -1,205 +1,158 @@
 {% extends "base.html" %}
 
-{% block title %}Welcome to UVote - CSPC Student Election System{% endblock %}
+{% block title %}Welcome to UVote{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- Hero Section -->
-    <div class="bg-primary text-white p-5 rounded-3 mb-5">
-        <div class="container-fluid py-3">
-            <h1 class="display-5 fw-bold">Welcome to UVote</h1>
-            <p class="col-md-8 fs-4">Your trusted platform for secure and transparent student elections at Camarines Sur Polytechnic Colleges.</p>
-            {% if not current_user.is_authenticated %}
-                <a class="btn btn-light btn-lg" href="{{ url_for('register') }}">Register to Vote</a>
-            {% else %}
-                <a class="btn btn-light btn-lg" href="{{ url_for('dashboard') }}">Go to Dashboard</a>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="text-center mb-5">
+                <h1 class="display-4 fw-bold text-primary">Welcome to UVote</h1>
+                <p class="lead text-muted">Your trusted platform for secure and transparent student elections.</p>
+            </div>
+
+            {% if current_user.is_authenticated %}
+                <div class="alert alert-info mb-4">
+                    <h4 class="alert-heading">Welcome back, {{ current_user.username }}!</h4>
+                    <p class="mb-0">
+                        {% if current_user.is_admin %}
+                            You are logged in as an administrator.
+                            <a href="{{ url_for('main.admin_dashboard') }}" class="alert-link">Go to Admin Dashboard</a>
+                        {% else %}
+                            Check out the active elections below and make your voice heard!
+                        {% endif %}
+                    </p>
+                </div>
             {% endif %}
-        </div>
-    </div>
 
-    <!-- About UVote Section -->
-    <div class="row mb-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-4">About UVote</h2>
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4 text-center mb-3">
-                            <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
-                            <h4>Secure</h4>
-                            <p>Advanced security measures to protect your vote and personal information.</p>
-                        </div>
-                        <div class="col-md-4 text-center mb-3">
-                            <i class="fas fa-check-double fa-3x text-primary mb-3"></i>
-                            <h4>Transparent</h4>
-                            <p>Fair and transparent election process with real-time results.</p>
-                        </div>
-                        <div class="col-md-4 text-center mb-3">
-                            <i class="fas fa-user-friends fa-3x text-primary mb-3"></i>
-                            <h4>Accessible</h4>
-                            <p>Easy to use platform accessible to all CSPC students.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+                    <h2 class="card-title h4 mb-4">Active Elections</h2>
 
-    <!-- Active Elections Section -->
-    {% if elections %}
-    <div class="row mb-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-4">Active Elections</h2>
-            <div class="row">
-                {% for election in elections %}
-                <div class="col-md-6 mb-4">
-                    <div class="card h-100">
-                        <div class="card-body">
-                            <h3 class="card-title">{{ election.title }}</h3>
-                            <p class="card-text">{{ election.description }}</p>
-                            <p class="text-muted">
-                                <small>
-                                    Start: {{ election.start_date.strftime('%B %d, %Y %I:%M %p') }}<br>
-                                    End: {{ election.end_date.strftime('%B %d, %Y %I:%M %p') }}
-                                </small>
-                            </p>
-                            {% if current_user.is_authenticated %}
-                            <a href="{{ url_for('election', election_id=election.id) }}" class="btn btn-primary">View Election</a>
-                            {% else %}
-                            <a href="{{ url_for('login') }}" class="btn btn-primary">Login to Vote</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Party Lists Section -->
-    <div class="row mb-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-4">Party Lists</h2>
-            {% if party_lists %}
-                <div class="row">
-                    {% for party in party_lists %}
-                    <div class="col-md-6 mb-4">
-                        <div class="card h-100">
-                            {% if party.image_path %}
-                            <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
-                                 class="card-img-top" alt="{{ party.name }}"
-                                 style="height: 200px; object-fit: cover;">
-                            {% endif %}
-                            <div class="card-body">
-                                <h3 class="card-title">{{ party.name }}</h3>
-                                <p class="card-text">{{ party.description }}</p>
-                                <h5>Platform:</h5>
-                                <ul class="list-group list-group-flush mb-3">
-                                    {% for platform in party.platforms %}
-                                    <li class="list-group-item">{{ platform }}</li>
-                                    {% endfor %}
-                                </ul>
-                                <button class="btn btn-primary" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#partyModal{{ party.id }}">
-                                    Learn More
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Party Details Modal -->
-                    <div class="modal fade" id="partyModal{{ party.id }}" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h5 class="modal-title">{{ party.name }}</h5>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    {% if party.image_path %}
-                                    <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
-                                         class="img-fluid mb-3" alt="{{ party.name }}">
-                                    {% endif %}
-                                    <h4>About Us</h4>
-                                    <p>{{ party.description }}</p>
-                                    
-                                    <h4>Our Platform</h4>
-                                    <ul class="list-group list-group-flush mb-3">
-                                        {% for platform in party.platforms %}
-                                        <li class="list-group-item">
-                                            <h5>{{ platform.title }}</h5>
-                                            <p>{{ platform.description }}</p>
-                                        </li>
-                                        {% endfor %}
-                                    </ul>
-
-                                    <h4>Our Candidates</h4>
-                                    <div class="row">
-                                        {% for candidate in party.candidates %}
-                                        <div class="col-md-4 mb-3">
-                                            <div class="card">
-                                                {% if candidate.image_path %}
-                                                <img src="{{ url_for('candidate_images', filename=candidate.image_path) }}" 
-                                                     class="card-img-top" alt="{{ candidate.name }}"
-                                                     style="height: 200px; object-fit: cover;">
-                                                {% endif %}
-                                                <div class="card-body">
-                                                    <h5 class="card-title">{{ candidate.name }}</h5>
-                                                    <p class="card-text">
-                                                        <small class="text-muted">{{ candidate.position.title }}</small>
-                                                    </p>
-                                                </div>
+                    {% if elections %}
+                        <div class="row row-cols-1 row-cols-md-2 g-4">
+                            {% for election in elections %}
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <h5 class="card-title">{{ election.title }}</h5>
+                                            <p class="card-text text-muted">{{ election.description }}</p>
+                                            <div class="small text-muted mb-3">
+                                                <div>Start: {{ election.start_date|datetimeformat }}</div>
+                                                <div>End: {{ election.end_date|datetimeformat }}</div>
                                             </div>
+                                            {% if current_user.is_authenticated %}
+                                                <a href="{{ url_for('main.election', election_id=election.id) }}" 
+                                                   class="btn btn-primary">View Details</a>
+                                            {% else %}
+                                                <a href="{{ url_for('main.login') }}" class="btn btn-primary">
+                                                    Login to Vote
+                                                </a>
+                                            {% endif %}
                                         </div>
-                                        {% endfor %}
                                     </div>
                                 </div>
-                            </div>
+                            {% endfor %}
                         </div>
-                    </div>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="alert alert-info text-center">
-                    No party lists have been registered yet.
-                </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- How to Vote Section -->
-    <div class="row mb-5">
-        <div class="col-md-12">
-            <h2 class="text-center mb-4">How to Vote</h2>
-            <div class="card">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-3 text-center mb-3">
-                            <div class="h1 text-primary">1</div>
-                            <h5>Register</h5>
-                            <p>Create your account using your student ID</p>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                            <p class="text-muted mb-0">No active elections at the moment.</p>
                         </div>
-                        <div class="col-md-3 text-center mb-3">
-                            <div class="h1 text-primary">2</div>
-                            <h5>Login</h5>
-                            <p>Sign in to your account</p>
-                        </div>
-                        <div class="col-md-3 text-center mb-3">
-                            <div class="h1 text-primary">3</div>
-                            <h5>Select</h5>
-                            <p>Choose your preferred candidates</p>
-                        </div>
-                        <div class="col-md-3 text-center mb-3">
-                            <div class="h1 text-primary">4</div>
-                            <h5>Submit</h5>
-                            <p>Cast your vote securely</p>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
+
+            {% if party_lists %}
+                <div class="card shadow-sm mt-4">
+                    <div class="card-body">
+                        <h2 class="card-title h4 mb-4">Party Lists</h2>
+                        <div class="row row-cols-1 row-cols-md-3 g-4">
+                            {% for party in party_lists %}
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100 party-list-card" data-party-id="{{ party.id }}" data-party-name="{{ party.name|e }}">
+                                        {% if party.image_path %}
+                                        <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
+                                             class="card-img-top" alt="{{ party.name }}"
+                                             style="height: 200px; object-fit: cover;">
+                                        {% endif %}
+                                        <div class="card-body">
+                                            <h3 class="card-title">{{ party.name }}</h3>
+                                            <p class="card-text">{{ party.description }}</p>
+                                            <h5>Platform:</h5>
+                                            <ul class="list-group list-group-flush mb-3">
+                                                {% for platform in party.platforms %}
+                                                <li class="list-group-item">{{ platform }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                            <button class="btn btn-primary view-candidates-btn" type="button">View Candidates</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+
+            {% if not current_user.is_authenticated %}
+                <div class="text-center mt-5">
+                    <h3 class="h5 mb-4">Ready to participate?</h3>
+                    <a href="{{ url_for('main.register') }}" class="btn btn-primary me-2">Register Now</a>
+                    <a href="{{ url_for('main.login') }}" class="btn btn-outline-primary">Login</a>
+                </div>
+            {% endif %}
         </div>
     </div>
 </div>
-{% endblock %} 
+
+<!-- Modal for displaying candidates -->
+<div class="modal fade" id="candidatesModal" tabindex="-1" aria-labelledby="candidatesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="candidatesModalLabel">Candidates</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="candidatesModalBody">
+        <!-- Candidates will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.view-candidates-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var card = btn.closest('.party-list-card');
+            var partyId = card.getAttribute('data-party-id');
+            var partyName = card.getAttribute('data-party-name');
+            showCandidates(partyId, partyName);
+        });
+    });
+});
+
+function showCandidates(partyId, partyName) {
+  fetch(`/party-list/${partyId}/candidates/json`)
+    .then(response => response.json())
+    .then(candidates => {
+      let html = '';
+      if (candidates.length === 0) {
+        html = '<div class="alert alert-info">No candidates found for this party list.</div>';
+      } else {
+        html = `<h5 class='mb-3'>Candidates for <strong>${partyName}</strong></h5>`;
+        html += '<ul class="list-group">';
+        candidates.forEach(candidate => {
+          html += `<li class="list-group-item"><strong>${candidate.name}</strong> - ${candidate.position}</li>`;
+        });
+        html += '</ul>';
+      }
+      document.getElementById('candidatesModalBody').innerHTML = html;
+      var modal = new bootstrap.Modal(document.getElementById('candidatesModal'));
+      modal.show();
+    });
+}
+</script>
+{% endblock %}

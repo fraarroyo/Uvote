@@ -56,10 +56,15 @@
                             {% endif %}
                         </div>
                         
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            All times are in Philippine Standard Time (PST/UTC+8)
+                        </div>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 {{ form.start_date.label(class="form-label") }}
-                                {{ form.start_date(class="form-control") }}
+                                {{ form.start_date(class="form-control", type="datetime-local") }}
                                 {% if form.start_date.errors %}
                                     {% for error in form.start_date.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -69,7 +74,7 @@
                             
                             <div class="col-md-6 mb-3">
                                 {{ form.end_date.label(class="form-label") }}
-                                {{ form.end_date(class="form-control") }}
+                                {{ form.end_date(class="form-control", type="datetime-local") }}
                                 {% if form.end_date.errors %}
                                     {% for error in form.end_date.errors %}
                                         <div class="text-danger">{{ error }}</div>
@@ -114,6 +119,17 @@
 
 .card {
     border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    background-color: #fff;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
 }
 
 .form-control:focus {
@@ -122,7 +138,19 @@
 }
 
 .btn-primary {
-    padding: 0.5rem 1.5rem;
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+.alert-info {
+    background-color: #e8f4fd;
+    border-color: #bee5eb;
+    color: #0c5460;
 }
 </style>
-{% endblock %} 
+{% endblock %}

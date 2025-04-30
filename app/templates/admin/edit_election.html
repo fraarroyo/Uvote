@@ -99,4 +99,23 @@
     padding: 0.5rem 1.5rem;
 }
 </style>
-{% endblock %} 
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Set min datetime to now for start_date
+    const startDateInput = document.getElementById('start_date');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    startDateInput.min = now.toISOString().slice(0, 16);
+
+    // Update end_date min when start_date changes
+    startDateInput.addEventListener('change', function() {
+        const endDateInput = document.getElementById('end_date');
+        endDateInput.min = this.value;
+        if (endDateInput.value < this.value) {
+            endDateInput.value = this.value;
+        }
+    });
+});
+</script>
+{% endblock %}

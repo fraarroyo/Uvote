@@ -38,14 +38,17 @@
                 {% endif %}
             {% endwith %}
 
-            <form method="POST" action="{{ url_for('main.confirm_vote', election_id=election.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <form method="POST" action="{{ url_for('main.confirm_vote', election_id=election.id) }}" id="votingForm">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
                 {% for position in positions %}
                 <div class="card mb-5 position-card">
                     <div class="card-header bg-primary text-white py-3">
                         <h3 class="card-title mb-0 position-title">{{ position.title }}</h3>
                         {% if position.description %}
                         <small class="text-white-50">{{ position.description }}</small>
+                        {% endif %}
+                        {% if 'REPRESENTATIVE' in position.title.upper() %}
+                        <small class="text-white-50 d-block mt-2">You must select at least 1 and up to 2 representatives</small>
                         {% endif %}
                     </div>
                     <div class="card-body py-4">
@@ -73,13 +76,17 @@
                                             <span class="badge bg-secondary">{{ candidate.party_list.name }}</span>
                                         </div>
                                         {% endif %}
-                                        {% if candidate.description %}
-                                        <p class="card-text text-muted mb-3">{{ candidate.description }}</p>
-                                        {% endif %}
                                         <div class="form-check custom-radio">
+                                            {% if 'REPRESENTATIVE' in position.title.upper() %}
+                                            <input class="form-check-input representative-checkbox" type="checkbox"
+                                                   name="vote_{{ position.id }}" value="{{ candidate.id }}"
+                                                   id="candidate{{ candidate.id }}"
+                                                   data-position="{{ position.id }}">
+                                            {% else %}
                                             <input class="form-check-input" type="radio"
                                                    name="vote_{{ position.id }}" value="{{ candidate.id }}"
                                                    id="candidate{{ candidate.id }}" required>
+                                            {% endif %}
                                             <label class="form-check-label vote-label" for="candidate{{ candidate.id }}">
                                                 Vote for {{ candidate.name }}
                                             </label>
@@ -99,9 +106,16 @@
                                         <h5 class="card-title fw-bold mb-2">Abstain</h5>
                                         <p class="card-text text-muted mb-3">Choose to abstain from voting for this position</p>
                                         <div class="form-check custom-radio">
+                                            {% if 'REPRESENTATIVE' in position.title.upper() %}
+                                            <input class="form-check-input representative-checkbox" type="checkbox"
+                                                   name="vote_{{ position.id }}" value="abstain"
+                                                   id="abstain_{{ position.id }}"
+                                                   data-position="{{ position.id }}">
+                                            {% else %}
                                             <input class="form-check-input" type="radio"
                                                    name="vote_{{ position.id }}" value="abstain"
                                                    id="abstain_{{ position.id }}" required>
+                                            {% endif %}
                                             <label class="form-check-label vote-label" for="abstain_{{ position.id }}">
                                                 Abstain from voting
                                             </label>
@@ -163,8 +177,13 @@
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
+.candidate-card.selected {
+    border-color: #0d6efd;
+    background-color: rgba(13, 110, 253, 0.05);
+}
+
 .candidate-image-container {
-    width: 192px; /* 2 inches at 96 DPI */
+    width: 192px;
     height: 192px;
     margin: 1rem auto;
     overflow: hidden;
@@ -242,7 +261,6 @@
     background-color: #e9ecef;
 }
 
-/* Ensure consistent card heights */
 .card-body {
     display: flex;
     flex-direction: column;
@@ -252,7 +270,6 @@
     flex-grow: 1;
 }
 
-/* Party list badge styling */
 .party-list-badge {
     margin-bottom: 0.5rem;
 }
@@ -262,7 +279,6 @@
     padding: 0.5em 1em;
 }
 
-/* Modal styles */
 .modal-lg {
     max-width: 800px;
 }
@@ -289,18 +305,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Make entire candidate card clickable for radio selection
+    // Make entire candidate card clickable for radio/checkbox selection
     const candidateCards = document.querySelectorAll('.candidate-card');
     candidateCards.forEach(card => {
         card.addEventListener('click', (e) => {
             if (!e.target.closest('.candidate-image-container')) {
-                const radio = card.querySelector('input[type="radio"]');
-                if (radio) {
-                    radio.checked = true;
+                const input = card.querySelector('input[type="radio"], input[type="checkbox"]');
+                if (input) {
+                    if (input.type === 'checkbox') {
+                        input.checked = !input.checked;
+                        card.classList.toggle('selected', input.checked);
+                    } else {
+                        input.checked = true;
+                        // Remove selected class from all cards in this position
+                        document.querySelectorAll(`.candidate-card input[name="${input.name}"]`).forEach(radio => {
+                            radio.closest('.candidate-card').classList.remove('selected');
+                        });
+                        card.classList.add('selected');
+                    }
                 }
             }
         });
     });
+
+    // Handle representative checkbox validation
+    const form = document.getElementById('votingForm');
+    form.addEventListener('submit', function(e) {
+        const representativePositions = {};
+        
+        // Group checkboxes by position
+        document.querySelectorAll('.representative-checkbox').forEach(checkbox => {
+            const positionId = checkbox.dataset.position;
+            if (!representativePositions[positionId]) {
+                representativePositions[positionId] = [];
+            }
+            if (checkbox.checked) {
+                representativePositions[positionId].push(checkbox);
+            }
+        });
+
+        // Validate each position
+        for (const positionId in representativePositions) {
+            const checkedBoxes = representativePositions[positionId];
+            if (checkedBoxes.length > 2) {
+                e.preventDefault();
+                alert('You can only select up to 2 representatives for each position.');
+                return;
+            }
+            if (checkedBoxes.length === 0) {
+                e.preventDefault();
+                alert('Please select at least 1 representative for each position.');
+                return;
+            }
+        }
+    });
 });
 </script>
-{% endblock %} 
+{% endblock %}

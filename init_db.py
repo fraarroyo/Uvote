@@ -4,18 +4,22 @@ import os
 # Add the current directory to the path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-import app
-from app import app, db
-from models import College, User, Election, Position, Candidate, PartyList, Platform
-from datetime import datetime, timedelta
+from app import create_app
+from extensions import db
 
 def init_db():
+    app = create_app()
+    
     with app.app_context():
-        # Create tables
+        # Import models here to avoid circular imports
+        from app.models import College, User, Election, Position, Candidate, PartyList, Platform
+        
+        # Drop all tables and recreate them
+        db.drop_all()
         db.create_all()
 
         # Create test college
-        college = College(name='Test College', description='Test Description')
+        college = College(name='Test College')
         db.session.add(college)
         db.session.commit()
 
@@ -82,4 +86,5 @@ def init_db():
         print('Database initialized successfully!')
 
 if __name__ == '__main__':
-    init_db() 
+    from datetime import datetime, timedelta
+    init_db()
