@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Voter Lists</h2>
+    
+    <!-- Upload Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Upload Student List</h4>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('upload_voter_list') }}" method="post" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label for="pdf_file" class="form-label">Select PDF File</label>
+                    <input type="file" class="form-control" id="pdf_file" name="file" accept=".pdf" required>
+                    <small class="text-muted">Upload PDF files containing student numbers</small>
+                </div>
+                <div class="mb-3">
+                    <label for="college" class="form-label">Select College</label>
+                    <select class="form-select" id="college" name="college_id" required>
+                        <option value="">Choose a college...</option>
+                        {% for college in colleges %}
+                        <option value="{{ college.id }}">{{ college.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Upload List</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Uploaded Lists -->
+    <div class="card">
+        <div class="card-header">
+            <h4>Uploaded Lists</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>College</th>
+                            <th>Total Students</th>
+                            <th>Registered</th>
+                            <th>Upload Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for college in colleges %}
+                        <tr>
+                            <td>{{ college.name }}</td>
+                            <td>{{ college.eligible_students|length }}</td>
+                            <td>{{ college.eligible_students|selectattr('is_registered', 'eq', true)|list|length }}</td>
+                            <td>-</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" 
+                                        onclick="if(confirm('Are you sure you want to clear all student records for this college?')) 
+                                                window.location.href='{{ url_for('clear_voter_list', college_id=college.id) }}'">
+                                    Clear List
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if results %}
+<div class="modal fade" id="resultsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Import Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {% if results.success %}
+                <div class="alert alert-success">{{ results.message }}</div>
+                {% else %}
+                <div class="alert alert-danger">{{ results.message }}</div>
+                {% endif %}
+                {% if results.errors %}
+                <h6>Errors:</h6>
+                <ul>
+                    {% for error in results.errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if results %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var modal = new bootstrap.Modal(document.getElementById('resultsModal'));
+        modal.show();
+    });
+</script>
+{% endif %}
+{% endblock %} 

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - UVote{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manage Users</h2>
+    
+    <!-- Add CSRF token in a hidden form -->
+    <form id="csrf-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+    </form>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('import_users') }}" class="btn btn-primary">Import Users</a>
+        <button class="btn btn-danger" onclick="confirmRemoveAll()">Remove All Users</button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Student ID</th>
+                    <th>Email</th>
+                    <th>College</th>
+                    <th>Role</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.student_id }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.college_ref.name if user.college_ref else 'Not Assigned' }}</td>
+                    <td>{{ user.role }}</td>
+                    <td>
+                        {% if user.role != 'admin' %}
+                        <form action="{{ url_for('main.delete_user', id=user.id) }}" method="POST" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this user?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                            <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Remove All Confirmation Modal -->
+<div class="modal fade" id="removeAllModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Remove All</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to remove all non-admin users? This action cannot be undone.
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form action="{{ url_for('main.remove_all_users') }}" method="POST" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token_value }}">
+                    <button type="submit" class="btn btn-danger">Remove All</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmRemoveAll() {
+    new bootstrap.Modal(document.getElementById('removeAllModal')).show();
+}
+</script>
+{% endblock %} 

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Login - UVote{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="text-center mb-5">
+                <h1 class="display-5 fw-bold text-primary mb-3">Welcome Back!</h1>
+                <p class="text-muted">Sign in to access your voting dashboard</p>
+            </div>
+
+            <div class="card shadow-lg">
+                <div class="card-body p-4 p-lg-5">
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% set last_message = messages|last %}
+                            <div class="alert alert-{{ last_message[0] }} alert-dismissible fade show mb-4" role="alert">
+                                {{ last_message[1] }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" action="{{ url_for('main.login') }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-floating mb-4">
+                            {{ form.username(class="form-control form-control-lg", placeholder="Email or Student ID") }}
+                            {{ form.username.label }}
+                            <small class="text-muted d-block mt-1">Enter your email or student ID</small>
+                            {% if form.username.errors %}
+                                {% for error in form.username.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="form-floating mb-4">
+                            {{ form.password(class="form-control form-control-lg", placeholder="Password") }}
+                            {{ form.password.label }}
+                            <small class="text-muted d-block mt-1">Enter your student ID as password</small>
+                            {% if form.password.errors %}
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger small mt-1">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                {{ form.remember(class="form-check-input") }}
+                                {{ form.remember.label(class="form-check-label") }}
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <p class="text-muted">
+                    Don't have an account? 
+                    <a href="{{ url_for('main.register') }}" class="text-primary text-decoration-none fw-bold">Register here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-floating > label {
+    padding: 1rem;
+}
+
+.form-floating > .form-control {
+    height: calc(3.5rem + 2px);
+    line-height: 1.25;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 0.25rem rgba(37, 99, 235, 0.1);
+}
+
+.btn-primary {
+    padding: 0.8rem 1.5rem;
+    font-weight: 600;
+}
+
+.card {
+    border-radius: 1rem;
+}
+
+.alert {
+    border-radius: 0.75rem;
+}
+</style>
+{% endblock %} 

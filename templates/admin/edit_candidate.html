@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Candidate - UVote{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Edit Candidate</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Candidate Name</label>
+                            <input type="text" class="form-control" id="name" name="name" 
+                                   value="{{ candidate.name }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" 
+                                      rows="3">{{ candidate.description }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="party_list" class="form-label">Party List</label>
+                            <input type="text" class="form-control" id="party_list" name="party_list" 
+                                   value="{{ candidate.party_list or '' }}">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="image" class="form-label">Candidate Image</label>
+                            <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                            {% if candidate.image_path %}
+                            <div class="mt-2">
+                                <img src="{{ url_for('serve_candidate_image', filename=candidate.image_path) }}" 
+                                     class="img-thumbnail" style="max-height: 200px;" 
+                                     alt="{{ candidate.name }}">
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('manage_candidates') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Candidates
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

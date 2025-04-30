@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block title %}Election Results - {{ election.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Election Results: {{ election.title }}</h2>
+        <div>
+            <button class="btn btn-success me-2" onclick="exportToCSV()">
+                <i class="fas fa-download me-2"></i>Export Results
+            </button>
+            <button class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#resetModal">
+                <i class="fas fa-undo me-2"></i>Reset Results
+            </button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Reset Confirmation Modal -->
+    <div class="modal fade" id="resetModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Reset</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to reset the results for "{{ election.title }}"?</p>
+                    <p class="text-danger">This action will delete all votes for this election and cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" onclick="resetElection({{ election.id }})">Reset Results</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-body">
+            <h5 class="card-title mb-4">Election Statistics</h5>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary bg-gradient text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-users fa-2x mb-3"></i>
+                            <h6 class="card-subtitle mb-2">Total Voters</h6>
+                            <h3 class="card-title">{{ total_voters }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success bg-gradient text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-vote-yea fa-2x mb-3"></i>
+                            <h6 class="card-subtitle mb-2">Total Votes Cast</h6>
+                            <h3 class="card-title">
+                                {% set total_votes = namespace(count=0) %}
+                                {% for position_results in results.values() %}
+                                    {% for result in position_results %}
+                                        {% set total_votes.count = total_votes.count + result.vote_count %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {{ total_votes.count }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info bg-gradient text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-pie fa-2x mb-3"></i>
+                            <h6 class="card-subtitle mb-2">Voter Turnout</h6>
+                            <h3 class="card-title">
+                                {% if total_voters > 0 %}
+                                    {{ ((total_votes.count / total_voters) * 100)|round(1) }}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% for position in positions %}
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary bg-gradient text-white">
+            <h4 class="mb-0">{{ position.title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 50px">Rank</th>
+                            <th style="width: 100px">Image</th>
+                            <th>Candidate</th>
+                            <th>Description</th>
+                            <th class="text-center">Votes</th>
+                            <th class="text-center" style="width: 200px">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in results[position.id] %}
+                        <tr>
+                            <td class="text-center">
+                                {% if loop.index == 1 %}
+                                    <span class="badge bg-success rounded-pill">
+                                        <i class="fas fa-trophy"></i> {{ loop.index }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-secondary rounded-pill">{{ loop.index }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if result.candidate.image_path %}
+                                <img src="{{ url_for('serve_candidate_image', filename=result.candidate.image_path) }}" 
+                                     class="rounded-circle shadow-sm" 
+                                     style="width: 50px; height: 50px; object-fit: cover;"
+                                     alt="{{ result.candidate.name }}">
+                                {% else %}
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center shadow-sm"
+                                     style="width: 50px; height: 50px;">
+                                    <i class="fas fa-user text-muted"></i>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ result.candidate.name }}</strong>
+                            </td>
+                            <td>{{ result.candidate.description }}</td>
+                            <td class="text-center">
+                                <span class="badge bg-primary rounded-pill">{{ result.vote_count }}</span>
+                            </td>
+                            <td>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar {% if loop.index == 1 %}bg-success{% else %}bg-primary{% endif %} bg-gradient" 
+                                         role="progressbar" 
+                                         style="width: {{ result.percentage }}%"
+                                         aria-valuenow="{{ result.percentage }}" 
+                                         aria-valuemin="0" 
+                                         aria-valuemax="100">
+                                        <strong>{{ result.percentage }}%</strong>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% block scripts %}
+<script>
+function resetElection(electionId) {
+    fetch(`/admin/election/${electionId}/reset`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.reload();
+        } else {
+            alert('Failed to reset election results');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while resetting the election results');
+    });
+}
+
+function exportToCSV() {
+    const electionTitle = "{{ election.title }}".replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const filename = `${electionTitle}_results.csv`;
+    let csvContent = "Position,Rank,Candidate,Votes,Percentage\n";
+    
+    {% for position in positions %}
+    {% for result in results[position.id] %}
+    csvContent += `"{{ position.title }}",{{ loop.index }},"{{ result.candidate.name }}",{{ result.vote_count }},{{ result.percentage }}\n`;
+    {% endfor %}
+    {% endfor %}
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    if (navigator.msSaveBlob) {
+        navigator.msSaveBlob(blob, filename);
+    } else {
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", filename);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+}
+</script>
+{% endblock %}
+{% endblock %} 

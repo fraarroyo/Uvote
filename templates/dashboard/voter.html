@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Voter Dashboard - UVote{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1 class="mb-4">Voter Dashboard</h1>
+        
+        <h2 class="mb-3">Active Elections</h2>
+        {% if elections %}
+            {% for election in elections %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0">{{ election.title }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ election.description }}</p>
+                    <p class="card-text">
+                        <small class="text-muted">
+                            Start: {{ election.start_date.strftime('%Y-%m-%d %H:%M') }} |
+                            End: {{ election.end_date.strftime('%Y-%m-%d %H:%M') }}
+                        </small>
+                    </p>
+                    <a href="{{ url_for('election', election_id=election.id) }}" class="btn btn-primary">
+                        View Election
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="alert alert-info">
+                No active elections at the moment. Please check back later.
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

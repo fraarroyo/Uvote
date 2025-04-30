@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Create Candidate - UVote{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Create New Candidate</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('create_candidate') }}" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Candidate Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="election_id" class="form-label">Election</label>
+                        <select class="form-select" id="election_id" name="election_id" onchange="updatePositions()" required>
+                            <option value="">Select an election...</option>
+                            {% for election in elections %}
+                            <option value="{{ election.id }}">{{ election.title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="position_id" class="form-label">Position</label>
+                        <select class="form-select" id="position_id" name="position_id" onchange="toggleCollegeField()" required>
+                            <option value="">Select a position...</option>
+                            {% for position in positions %}
+                            <option value="{{ position.id }}" 
+                                    data-election="{{ position.election_id }}"
+                                    data-title="{{ position.title }}">
+                                {{ position.title }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="collegeField" style="display: none;">
+                        <label for="college_id" class="form-label">College</label>
+                        <select class="form-select" id="college_id" name="college_id">
+                            <option value="">Select a college...</option>
+                            {% for college in colleges %}
+                            <option value="{{ college.id }}">{{ college.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">Required for representative positions</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="party_list" class="form-label">Party List</label>
+                        <input type="text" class="form-control" id="party_list" name="party_list">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="image" class="form-label">Candidate Image</label>
+                        <input type="file" class="form-control" id="image" name="image" accept="image/*">
+                        <small class="text-muted">Allowed formats: PNG, JPG, JPEG, GIF</small>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Create Candidate
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function updatePositions() {
+    const electionId = document.getElementById('election_id').value;
+    const positionSelect = document.getElementById('position_id');
+    const options = positionSelect.getElementsByTagName('option');
+    
+    // Reset position selection
+    positionSelect.value = '';
+    
+    // Show/hide positions based on selected election
+    for (let i = 1; i < options.length; i++) {
+        const option = options[i];
+        if (electionId === '' || option.getAttribute('data-election') === electionId) {
+            option.style.display = '';
+        } else {
+            option.style.display = 'none';
+        }
+    }
+    
+    // Reset college field visibility
+    toggleCollegeField();
+}
+
+function toggleCollegeField() {
+    const positionSelect = document.getElementById('position_id');
+    const selectedOption = positionSelect.options[positionSelect.selectedIndex];
+    const collegeField = document.getElementById('collegeField');
+    const collegeSelect = document.getElementById('college_id');
+    
+    if (selectedOption && selectedOption.getAttribute('data-title').toLowerCase() === 'representative') {
+        collegeField.style.display = 'block';
+        collegeSelect.required = true;
+    } else {
+        collegeField.style.display = 'none';
+        collegeSelect.required = false;
+        collegeSelect.value = '';
+    }
+}
+</script>
+{% endblock %} 

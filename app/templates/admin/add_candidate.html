@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Add Candidate - UVote{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3">Add New Candidate</h1>
+                <a href="{{ url_for('main.manage_candidates') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Candidates
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control" + (" is-invalid" if form.name.errors else "")) }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows="3") }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.party_list.label(class="form-label") }}
+                            {{ form.party_list(class="form-select" + (" is-invalid" if form.party_list.errors else "")) }}
+                            {% if form.party_list.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.party_list.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.position_id.label(class="form-label") }}
+                            {{ form.position_id(class="form-select" + (" is-invalid" if form.position_id.errors else ""), onchange="toggleCollegeField()") }}
+                            {% if form.position_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.position_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3" id="collegeField" style="display: none;">
+                            {{ form.college_id.label(class="form-label") }}
+                            {{ form.college_id(class="form-select" + (" is-invalid" if form.college_id.errors else "")) }}
+                            {% if form.college_id.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.college_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.image.label(class="form-label") }}
+                            {{ form.image(class="form-control" + (" is-invalid" if form.image.errors else "")) }}
+                            <div class="form-text">Allowed formats: jpg, jpeg, png, gif</div>
+                            {% if form.image.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.image.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('main.manage_candidates') }}" class="btn btn-secondary">Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function toggleCollegeField() {
+    const positionSelect = document.getElementById('position_id');
+    const collegeField = document.getElementById('collegeField');
+    const selectedOption = positionSelect.options[positionSelect.selectedIndex];
+    const positionTitle = selectedOption.text.split(' (')[0].toUpperCase().trim();
+    
+    if (positionTitle.includes('REPRESENTATIVE')) {
+        collegeField.style.display = 'block';
+        document.getElementById('college_id').required = true;
+    } else {
+        collegeField.style.display = 'none';
+        document.getElementById('college_id').required = false;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    toggleCollegeField();
+});
+</script>
+{% endblock %}
+{% endblock %}
