@@ -100,7 +100,7 @@
                                         </div>
                                         {% if current_user.is_authenticated %}
                                             {% if election.is_active %}
-                                                <a href="{{ url_for('main.election', election_id=election.id) }}" 
+                                                <a href="{{ url_for('main.election', election_id=election.id) }}"
                                                    class="btn btn-primary w-100">
                                                     <i class="fas fa-vote-yea me-2"></i>View Details
                                                 </a>
@@ -139,7 +139,7 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-gradient-info text-white">
                         <h2 class="h4 mb-0">
-                            <i class="fas fa-users me-2"></i>Party Lists
+                            <i class="fas fa-users me-2"></i>Parties
                         </h2>
                     </div>
                     <div class="card-body">
@@ -149,7 +149,7 @@
                                     <div class="card h-100 party-list-card" data-party-id="{{ party.id }}" data-party-name="{{ party.name|e }}">
                                         {% if party.image_path %}
                                             <div class="party-image">
-                                                <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}" 
+                                                <img src="{{ url_for('static', filename='party_images/' + party.image_path) }}"
                                                      class="card-img-top" alt="{{ party.name }}"
                                                      style="height: 200px; object-fit: cover;">
                                                 <div class="party-overlay bg-gradient-primary">
@@ -168,7 +168,7 @@
                                                 </h5>
                                                 <p class="card-text">{{ party.description }}</p>
                                             </div>
-                                            
+
                                             <div class="mb-4">
                                                 <h5 class="text-primary mb-3">
                                                     <i class="fas fa-bullseye me-2"></i>Platform
@@ -184,7 +184,7 @@
                                                     {% endfor %}
                                                 </div>
                                             </div>
-                                            
+
                                             <button class="btn btn-primary w-100 view-candidates-btn" type="button">
                                                 <i class="fas fa-users me-2"></i>View Candidates
                                             </button>
@@ -309,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             var card = btn.closest('.party-list-card');
             var partyId = card.getAttribute('data-party-id');
             var partyName = card.getAttribute('data-party-name');
-            
+
             fetch(`/party-list/${partyId}/candidates/json`)
                 .then(response => response.json())
                 .then(candidates => {
@@ -325,11 +325,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                     <div class="card">
                                         <div class="card-body">
                                             <div class="d-flex align-items-start">
-                                                ${candidate.image_url ? 
-                                                    `<img src="${candidate.image_url}" alt="${candidate.name}" 
-                                                          class="rounded-circle me-3" 
+                                                ${candidate.image_url ?
+                                                    `<img src="${candidate.image_url}" alt="${candidate.name}"
+                                                          class="rounded-circle me-3"
                                                           style="width: 64px; height: 64px; object-fit: cover;">` :
-                                                    `<div class="rounded-circle bg-light me-3 d-flex align-items-center justify-content-center" 
+                                                    `<div class="rounded-circle bg-light me-3 d-flex align-items-center justify-content-center"
                                                           style="width: 64px; height: 64px;">
                                                         <i class="fas fa-user fa-2x text-muted"></i>
                                                      </div>`
@@ -337,8 +337,8 @@ document.addEventListener('DOMContentLoaded', function() {
                                                 <div class="flex-grow-1">
                                                     <h6 class="fw-bold mb-1">${candidate.name}</h6>
                                                     <div class="badge bg-gradient-primary mb-2">${candidate.position}</div>
-                                                    ${candidate.description ? 
-                                                        `<p class="text-muted small mb-0">${candidate.description}</p>` : 
+                                                    ${candidate.description ?
+                                                        `<p class="text-muted small mb-0">${candidate.description}</p>` :
                                                         ''}
                                                 </div>
                                             </div>

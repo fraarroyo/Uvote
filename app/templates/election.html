@@ -12,15 +12,19 @@
                     <p class="card-text">{{ election.description }}</p>
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <small class="text-muted">Start Date: {{ election.start_date.strftime('%B %d, %Y') }}</small>
+                            <small class="text-muted">Start Date: {{ election.start_date.strftime('%B %d, %Y %I:%M %p') }}</small>
                             <br>
-                            <small class="text-muted">End Date: {{ election.end_date.strftime('%B %d, %Y') }}</small>
+                            <small class="text-muted">End Date: {{ election.end_date.strftime('%B %d, %Y %I:%M %p') }}</small>
                         </div>
                         <div>
-                            {% if election.is_active %}
-                                <span class="badge bg-success">Active</span>
+                            {% if election.status == "ongoing" %}
+                                <span class="badge bg-success">Ongoing</span>
+                            {% elif election.status == "upcoming" %}
+                                <span class="badge bg-info">Upcoming</span>
+                            {% elif election.status == "ended" %}
+                                <span class="badge bg-secondary">Ended</span>
                             {% else %}
-                                <span class="badge bg-secondary">Inactive</span>
+                                <span class="badge bg-danger">Inactive</span>
                             {% endif %}
                         </div>
                     </div>
@@ -48,7 +52,7 @@
                         <small class="text-white-50">{{ position.description }}</small>
                         {% endif %}
                         {% if 'REPRESENTATIVE' in position.title.upper() %}
-                        <small class="text-white-50 d-block mt-2">You must select at least 1 and up to 2 representatives</small>
+                        <small class="text-white-50 d-block mt-2">Select at most two (2) candidates for the college representatives</small>
                         {% endif %}
                     </div>
                     <div class="card-body py-4">
@@ -95,7 +99,7 @@
                                 </div>
                             </div>
                             {% endfor %}
-                            
+
                             <!-- Abstain Option -->
                             <div class="col-md-4">
                                 <div class="card h-100 candidate-card abstain-card">
@@ -332,7 +336,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('votingForm');
     form.addEventListener('submit', function(e) {
         const representativePositions = {};
-        
+
         // Group checkboxes by position
         document.querySelectorAll('.representative-checkbox').forEach(checkbox => {
             const positionId = checkbox.dataset.position;

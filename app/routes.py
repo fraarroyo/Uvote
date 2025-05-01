@@ -331,11 +331,15 @@ def delete_party_list(party_id):
 def create_election():
     form = ElectionForm()
     if form.validate_on_submit():
+        # Convert date to datetime with start of day for start_date and end of day for end_date
+        start_datetime = datetime.combine(form.start_date.data, datetime.min.time())
+        end_datetime = datetime.combine(form.end_date.data, datetime.max.time())
+        
         election = Election(
             title=form.title.data,
             description=form.description.data,
-            start_date=form.start_date.data,
-            end_date=form.end_date.data,
+            start_date=start_datetime,
+            end_date=end_datetime,
             is_active=form.is_active.data
         )
 
@@ -450,9 +454,11 @@ def edit_election(id):
     if request.method == 'POST':
         election.title = request.form.get('title')
         election.description = request.form.get('description')
-        # Parse dates without time component
-        election.start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d').replace(hour=0, minute=0, second=0)
-        election.end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+        # Parse dates and set start of day for start_date and end of day for end_date
+        start_date = datetime.strptime(request.form.get('start_date'), '%Y-%m-%d')
+        end_date = datetime.strptime(request.form.get('end_date'), '%Y-%m-%d')
+        election.start_date = datetime.combine(start_date, datetime.min.time())
+        election.end_date = datetime.combine(end_date, datetime.max.time())
         election.is_active = request.form.get('is_active') == 'on'
 
         db.session.commit()
